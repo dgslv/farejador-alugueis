@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.db
+*.log
+dist/
+build/
+*.spec.bak
+.DS_Store
+backend/listings.db

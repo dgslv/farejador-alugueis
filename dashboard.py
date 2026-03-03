@@ -1,0 +1,560 @@
+import html as _html
+import json
+import re
+from datetime import datetime, timedelta
+from flask import Flask, redirect, url_for
+from storage import get_all_listings, mark_checked, toggle_tracked, init_db
+
+app = Flask(__name__)
+
+NEW_THRESHOLD_HOURS = 24
+
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Aluguel Dashboard</title>
+<style>
+  body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
+  h1 {{ margin-bottom: 4px; }}
+  .stats {{ color: #555; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
+  #toggle-checked-btn {{ background: #999; color: white; border: none; padding: 3px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }}
+  #toggle-checked-btn:hover {{ background: #777; }}
+  table {{ border-collapse: collapse; width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); }}
+  th {{ background: #222; color: white; padding: 10px 14px; text-align: left; font-size: 13px; }}
+  td {{ padding: 8px 14px; font-size: 14px; border-bottom: 1px solid #eee; vertical-align: middle; }}
+  tr:last-child td {{ border-bottom: none; }}
+  tr.unchecked {{ background: white; cursor: pointer; }}
+  tr.checked {{ background: #f0f0f0; color: #999; cursor: pointer; }}
+  tr.unchecked:hover {{ background: #f0f7ff; }}
+  tr.checked:hover {{ background: #e8e8e8; }}
+  tr.fresh {{ background: #f0fff4 !important; cursor: pointer; }}
+  tr.fresh:hover {{ background: #dcf5e4 !important; }}
+  tr.fresh td:first-child {{ box-shadow: inset 4px 0 0 #2e7d32; }}
+  .fresh-badge {{ display:inline-block; background:#2e7d32; color:white; font-size:10px; font-weight:600; padding:1px 7px; border-radius:10px; margin-left:6px; vertical-align:middle; letter-spacing:.3px; }}
+  tr.tracked td:first-child {{ box-shadow: inset 4px 0 0 #1565c0; }}
+  tr.gone {{ background: #fff3e0 !important; }}
+  tr.gone:hover {{ background: #ffe0b2 !important; }}
+  tr.gone td:first-child {{ box-shadow: inset 4px 0 0 #e65100; }}
+  .gone-badge {{ display:inline-block; background:#e65100; color:white; font-size:10px; font-weight:600; padding:1px 7px; border-radius:10px; margin-left:6px; vertical-align:middle; letter-spacing:.3px; }}
+  .track-btn {{ background: #1565c0; font-size:12px; padding:4px 8px; margin-top:4px; }}
+  .track-btn:hover {{ background: #0d47a1; }}
+  .track-btn.tracking {{ background: #5c6bc0; }}
+  .track-btn.tracking:hover {{ background: #3949ab; }}
+  tr.checked .price {{ text-decoration: line-through; }}
+  .price {{ font-weight: bold; }}
+  tr.checked .price {{ font-weight: normal; }}
+  .total {{ font-weight: bold; color: #333; }}
+  tr.checked .total {{ font-weight: normal; color: #999; }}
+  .apt-title {{ max-width: 180px; }}
+  button {{ cursor: pointer; background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; }}
+  button:hover {{ background: #388e3c; }}
+  tr.checked button {{ background: #bbb; }}
+  tr.checked button:hover {{ background: #999; }}
+
+  /* Thumbnail */
+  .thumb-cell {{ width: 90px; padding: 6px 10px; }}
+  .thumb {{ width: 80px; height: 56px; object-fit: cover; border-radius: 4px; display: block; cursor: zoom-in; }}
+  .no-img {{ width: 80px; height: 56px; background: #e0e0e0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #999; }}
+
+  /* Lightbox */
+  #lightbox {{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:2000; align-items:center; justify-content:center; flex-direction:column; }}
+  #lightbox.open {{ display:flex; }}
+  #lightbox img {{ max-width:90vw; max-height:80vh; object-fit:contain; border-radius:6px; box-shadow:0 4px 32px rgba(0,0,0,.5); }}
+  #lb-nav {{ margin-top:14px; display:flex; gap:16px; align-items:center; }}
+  #lb-nav button {{ background:#fff; color:#222; font-size:18px; padding:6px 18px; border-radius:6px; border:none; cursor:pointer; }}
+  #lb-nav button:hover {{ background:#eee; }}
+  #lb-counter {{ color:#ccc; font-size:13px; min-width:60px; text-align:center; }}
+  #lb-close {{ position:fixed; top:18px; right:24px; color:white; font-size:28px; cursor:pointer; line-height:1; }}
+
+  /* Detail modal */
+  #detail-modal {{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center; }}
+  #detail-modal.open {{ display:flex; }}
+  .dm-box {{ background:#fff; border-radius:12px; max-width:680px; width:95vw; max-height:90vh; overflow-y:auto; padding:28px 28px 20px; box-shadow:0 8px 40px rgba(0,0,0,.3); position:relative; }}
+  .dm-close {{ position:absolute; top:14px; right:18px; font-size:24px; cursor:pointer; color:#666; line-height:1; }}
+  .dm-close:hover {{ color:#222; }}
+  .dm-title {{ font-size:17px; font-weight:bold; margin:0 0 4px; padding-right:28px; }}
+  .dm-addr {{ color:#666; font-size:13px; margin-bottom:14px; }}
+  .dm-gallery {{ display:flex; gap:8px; overflow-x:auto; margin-bottom:16px; padding-bottom:4px; }}
+  .dm-gallery img {{ height:140px; border-radius:6px; cursor:zoom-in; flex-shrink:0; object-fit:cover; }}
+  .dm-gallery .no-gallery {{ color:#aaa; font-size:13px; padding:20px; }}
+  .dm-prices {{ display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; margin-bottom:14px; }}
+  .dm-prices .item {{ font-size:13px; }}
+  .dm-prices .item .label {{ color:#888; font-size:11px; text-transform:uppercase; letter-spacing:.5px; }}
+  .dm-prices .item .value {{ font-weight:600; color:#222; font-size:15px; }}
+  .dm-prices .item.total .value {{ color:#1a6b1a; font-size:17px; }}
+  .dm-meta {{ display:flex; gap:20px; font-size:13px; color:#555; margin-bottom:16px; flex-wrap:wrap; }}
+  .dm-meta span {{ background:#f0f0f0; padding:3px 10px; border-radius:20px; }}
+  .dm-open-btn {{ display:inline-block; background:#1976d2; color:white; border:none; padding:10px 22px; border-radius:6px; font-size:14px; cursor:pointer; text-decoration:none; }}
+  .dm-open-btn:hover {{ background:#1256a3; }}
+
+  /* Toast */
+  #toast {{ display:none; position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 22px; border-radius:8px; font-size:14px; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.25); z-index:3000; cursor:pointer; }}
+  #toast.show {{ display:block; animation:fadeout 0.4s ease 4.6s forwards; }}
+  @keyframes fadeout {{ to {{ opacity:0; pointer-events:none; }} }}
+</style>
+</head>
+<body>
+<div id="toast" onclick="this.classList.remove('show')"></div>
+<h1>Apartamentos</h1>
+<div class="stats"><span>{new} novos &nbsp;·&nbsp; {checked} vistos &nbsp;·&nbsp; {total} total{fresh_badge}</span><button id="toggle-checked-btn" onclick="toggleChecked()">Ocultar vistos</button><button id="enable-notif-btn" onclick="enableNotifications()" style="display:none;background:#e65100;font-size:12px;padding:3px 10px;">🔔 Ativar notificações</button></div>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Título</th>
+      <th>Rua</th>
+      <th>Bairro</th>
+      <th>Encontrado</th>
+      <th>Quartos</th>
+      <th>Área</th>
+      <th>Aluguel</th>
+      <th>Total</th>
+      <th>Ação</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows}
+  </tbody>
+</table>
+
+<!-- Detail modal -->
+<div id="detail-modal">
+  <div class="dm-box">
+    <span class="dm-close" onclick="closeDetail()">&#x2715;</span>
+    <p class="dm-title" id="dm-title"></p>
+    <p class="dm-addr" id="dm-addr"></p>
+    <div class="dm-gallery" id="dm-gallery"></div>
+    <div class="dm-prices" id="dm-prices"></div>
+    <div class="dm-meta" id="dm-meta"></div>
+    <a id="dm-open-btn" class="dm-open-btn" href="#" target="_blank">Abrir anúncio</a>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <span id="lb-close" onclick="closeLb()">&#x2715;</span>
+  <img id="lb-img" src="" alt="">
+  <div id="lb-nav">
+    <button onclick="lbStep(-1)">&#8592;</button>
+    <span id="lb-counter"></span>
+    <button onclick="lbStep(1)">&#8594;</button>
+  </div>
+</div>
+
+<script>
+  // ---- Lightbox ----
+  let lbImgs = [], lbIdx = 0;
+
+  function openLb(imgs, idx) {{
+    lbImgs = imgs; lbIdx = idx;
+    document.getElementById('lightbox').classList.add('open');
+    lbShow();
+  }}
+
+  function lbShow() {{
+    document.getElementById('lb-img').src = lbImgs[lbIdx];
+    document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+  }}
+
+  function lbStep(d) {{
+    lbIdx = (lbIdx + d + lbImgs.length) % lbImgs.length;
+    lbShow();
+  }}
+
+  function closeLb() {{
+    document.getElementById('lightbox').classList.remove('open');
+    document.getElementById('lb-img').src = '';
+  }}
+
+  document.getElementById('lightbox').addEventListener('click', function(e) {{
+    if (e.target === this) closeLb();
+  }});
+
+  // ---- Detail modal ----
+  function openDetail(d) {{
+    document.getElementById('dm-title').textContent = d.title || '—';
+    var addr = [d.street, d.neighborhood].filter(Boolean).join(', ') || '—';
+    document.getElementById('dm-addr').textContent = addr;
+
+    // Gallery
+    var gallery = document.getElementById('dm-gallery');
+    gallery.innerHTML = '';
+    var imgs = d.images || [];
+    if (imgs.length) {{
+      imgs.forEach(function(src, i) {{
+        var img = document.createElement('img');
+        img.src = src;
+        img.loading = 'lazy';
+        img.onclick = function(e) {{ e.stopPropagation(); openLb(imgs, i); }};
+        gallery.appendChild(img);
+      }});
+    }} else {{
+      gallery.innerHTML = '<span class="no-gallery">Sem fotos disponíveis</span>';
+    }}
+
+    // Prices
+    var price = d.price ? 'R$ ' + d.price.toLocaleString('pt-BR') + '/mês' : '—';
+    var condo = d.condo ? 'R$ ' + d.condo.toLocaleString('pt-BR') + '/mês' : '—';
+    var iptu  = d.iptu  ? 'R$ ' + d.iptu.toLocaleString('pt-BR') + '/mês'  : '—';
+    var totalVal = (d.price || 0) + (d.condo || 0) + (d.iptu || 0);
+    var total = totalVal ? 'R$ ' + totalVal.toLocaleString('pt-BR') + '/mês' : '—';
+    document.getElementById('dm-prices').innerHTML =
+      '<div class="item"><div class="label">Aluguel</div><div class="value">' + price + '</div></div>' +
+      '<div class="item"><div class="label">Condomínio</div><div class="value">' + condo + '</div></div>' +
+      '<div class="item"><div class="label">IPTU</div><div class="value">' + iptu + '</div></div>' +
+      '<div class="item total"><div class="label">Total</div><div class="value">' + total + '</div></div>';
+
+    // Meta
+    var meta = [];
+    if (d.area)     meta.push(d.area + ' m²');
+    if (d.bedrooms) meta.push(d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : ''));
+    if (d.posted_at) {{
+      var parts = d.posted_at.split('-');
+      meta.push('Publicado ' + parts[2] + '/' + parts[1] + (parts[0] ? '/' + parts[0].slice(2) : ''));
+    }}
+    document.getElementById('dm-meta').innerHTML = meta.map(function(s) {{ return '<span>' + s + '</span>'; }}).join('');
+
+    document.getElementById('dm-open-btn').href = d.url || '#';
+    document.getElementById('detail-modal').classList.add('open');
+  }}
+
+  function closeDetail() {{
+    document.getElementById('detail-modal').classList.remove('open');
+  }}
+
+  document.getElementById('detail-modal').addEventListener('click', function(e) {{
+    if (e.target === this) closeDetail();
+  }});
+
+  document.addEventListener('keydown', function(e) {{
+    if (document.getElementById('lightbox').classList.contains('open')) {{
+      if (e.key === 'ArrowLeft')  lbStep(-1);
+      if (e.key === 'ArrowRight') lbStep(1);
+      if (e.key === 'Escape') closeLb();
+      return;
+    }}
+    if (document.getElementById('detail-modal').classList.contains('open')) {{
+      if (e.key === 'Escape') closeDetail();
+    }}
+  }});
+
+  // ---- Hide-viewed toggle ----
+  var checkedHidden = false;
+  function toggleChecked() {{
+    checkedHidden = !checkedHidden;
+    document.querySelectorAll('tr.checked').forEach(function(r) {{
+      r.style.display = checkedHidden ? 'none' : '';
+    }});
+    document.getElementById('toggle-checked-btn').textContent =
+      checkedHidden ? 'Mostrar vistos' : 'Ocultar vistos';
+  }}
+
+  // ---- Fresh-listing browser notifications ----
+  var freshListings = {fresh_listings_json};
+
+  function showToast(msg) {{
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('show');
+    void t.offsetWidth; // restart animation
+    t.classList.add('show');
+    setTimeout(function() {{ t.classList.remove('show'); }}, 5000);
+  }}
+
+  function sendFreshNotifications(toNotify) {{
+    if (!toNotify.length) return;
+    var tag = 'fresh-' + Date.now();
+    if (toNotify.length === 1) {{
+      var l = toNotify[0];
+      showToast('Novo apartamento: ' + l.title + ' · R$ ' + (l.price || 0).toLocaleString('pt-BR') + '/mês');
+      if ('Notification' in window && Notification.permission === 'granted') {{
+        new Notification('Novo apartamento!', {{
+          body: l.title + ' · R$ ' + (l.price || 0).toLocaleString('pt-BR') + '/mês · ' + l.neighborhood,
+          tag: tag
+        }});
+      }}
+    }} else {{
+      showToast(toNotify.length + ' novos apartamentos encontrados!');
+      if ('Notification' in window && Notification.permission === 'granted') {{
+        new Notification(toNotify.length + ' novos apartamentos!', {{
+          body: toNotify.slice(0, 3).map(function(l) {{ return l.title; }}).join(' | ') + (toNotify.length > 3 ? ' …' : ''),
+          tag: tag
+        }});
+      }}
+    }}
+  }}
+
+  function fireNotifications() {{
+    var stored = localStorage.getItem('notified_ids');
+    var notifiedIds = new Set(stored ? JSON.parse(stored) : []);
+    var toNotify = freshListings.filter(function(l) {{ return !notifiedIds.has(l.id); }});
+    if (toNotify.length) {{
+      sendFreshNotifications(toNotify);
+      toNotify.forEach(function(l) {{ notifiedIds.add(l.id); }});
+      localStorage.setItem('notified_ids', JSON.stringify(Array.from(notifiedIds)));
+    }}
+  }}
+
+  function enableNotifications() {{
+    Notification.requestPermission().then(function(perm) {{
+      var btn = document.getElementById('enable-notif-btn');
+      if (perm === 'granted') {{
+        btn.style.display = 'none';
+        fireNotifications();
+      }} else {{
+        btn.textContent = '🔕 Notificações bloqueadas';
+        btn.style.background = '#999';
+      }}
+    }});
+  }}
+
+  if ('Notification' in window) {{
+    if (Notification.permission === 'granted') {{
+      fireNotifications();
+    }} else if (Notification.permission !== 'denied') {{
+      document.getElementById('enable-notif-btn').style.display = '';
+    }}
+  }}
+
+  // ---- Auto-refresh (polls /fragment every 30 s) ----
+  setInterval(function() {{
+    fetch('/fragment')
+      .then(function(r) {{ return r.json(); }})
+      .then(function(data) {{
+        document.querySelector('tbody').innerHTML = data.rows;
+        document.querySelector('.stats span').innerHTML = data.stats;
+
+        // Re-apply hide-viewed state
+        if (checkedHidden) {{
+          document.querySelectorAll('tr.checked').forEach(function(r) {{
+            r.style.display = 'none';
+          }});
+        }}
+
+        // Check for new unchecked listings and notify
+        if (data.fresh.length && 'Notification' in window && Notification.permission === 'granted') {{
+          var stored = localStorage.getItem('notified_ids');
+          var notifiedIds = new Set(stored ? JSON.parse(stored) : []);
+          var toNotify = data.fresh.filter(function(l) {{ return !notifiedIds.has(l.id); }});
+          if (toNotify.length) {{
+            sendFreshNotifications(toNotify);
+            toNotify.forEach(function(l) {{ notifiedIds.add(l.id); }});
+            localStorage.setItem('notified_ids', JSON.stringify(Array.from(notifiedIds)));
+          }}
+        }}
+      }});
+  }}, 30000);
+</script>
+</body>
+</html>"""
+
+ROW_TEMPLATE = """<tr class="{css_class}" onclick="openDetail({listing_data})" title="Ver detalhes">
+  <td class="thumb-cell" onclick="event.stopPropagation()">{thumb_html}</td>
+  <td class="apt-title">{title}</td>
+  <td>{street}</td>
+  <td>{neighborhood}</td>
+  <td>{seen_at}</td>
+  <td>{bedrooms}</td>
+  <td>{area}</td>
+  <td class="price">{price}</td>
+  <td class="total">{total}</td>
+  <td onclick="event.stopPropagation()">
+    <form method="POST" action="/check/{listing_id}">
+      <button type="submit">{action_label}</button>
+    </form>
+    <form method="POST" action="/toggle-track/{listing_id}">
+      <button type="submit" class="track-btn {track_btn_class}">{track_label}</button>
+    </form>
+  </td>
+</tr>"""
+
+
+def clean_title(raw):
+    """Extract the first descriptive line from VivaReal card text."""
+    if not raw:
+        return "—"
+    for line in raw.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        if re.match(r'^\+?\d+\s*fotos?$', line, re.IGNORECASE):
+            continue
+        return line[:100] + ('…' if len(line) > 100 else '')
+    return "—"
+
+
+def format_seen_at(s):
+    if not s:
+        return "—"
+    try:
+        dt = datetime.fromisoformat(s)
+        return dt.strftime("%d/%m %H:%M")
+    except Exception:
+        return s[:16]
+
+
+def build_thumb_html(images_json):
+    if not images_json:
+        return '<div class="no-img">sem foto</div>'
+    try:
+        imgs = json.loads(images_json)
+    except Exception:
+        return '<div class="no-img">sem foto</div>'
+    if not imgs:
+        return '<div class="no-img">sem foto</div>'
+    imgs_js = json.dumps(imgs)
+    return (
+        f'<img class="thumb" src="{imgs[0]}" loading="lazy" '
+        f'onclick="openLb({imgs_js},0)" title="{len(imgs)} foto(s)">'
+    )
+
+
+
+def _build_content():
+    """Return (rows_html, fresh_listings_data, stats_dict) from current DB state."""
+    listings = get_all_listings()
+    total = len(listings)
+    checked_count = sum(1 for l in listings if l.get("checked"))
+    new_count = total - checked_count
+
+    cutoff_dt = datetime.now() - timedelta(hours=NEW_THRESHOLD_HOURS)
+    cutoff_iso = cutoff_dt.isoformat()
+    gone_cutoff_iso = (datetime.now() - timedelta(minutes=35)).isoformat()
+
+    fresh_listings_data = []
+    rows_html = []
+    for l in listings:
+        is_checked = bool(l.get("checked"))
+        is_tracked = bool(l.get("tracked"))
+        seen_at_str = l.get("seen_at") or ""
+        last_seen = l.get("last_seen_at") or seen_at_str
+        is_gone = is_tracked and bool(last_seen) and last_seen < gone_cutoff_iso
+        is_fresh = not is_checked and seen_at_str >= cutoff_iso
+
+        classes = []
+        if is_gone:
+            classes.append("gone")
+        if is_tracked:
+            classes.append("tracked")
+        if is_fresh and not is_gone:
+            classes.append("fresh")
+        classes.append("checked" if is_checked else "unchecked")
+        css_class = " ".join(classes)
+
+        action_label = "Já visto" if is_checked else "✓ Marcar como visto"
+        track_label = "★ Monitorando" if is_tracked else "⭐ Monitorar"
+        track_btn_class = "tracking" if is_tracked else ""
+        bedrooms = l.get("bedrooms") or "—"
+        area = f"{l['area']} m²" if l.get("area") else "—"
+        price_val = l.get("price") or 0
+        condo_val = l.get("condo") or 0
+        iptu_val = l.get("iptu") or 0
+        price = f"R$ {price_val:,}/mês".replace(",", ".") if price_val else "—"
+        total_val = price_val + condo_val + iptu_val
+        total_str = f"R$ {total_val:,}/mês".replace(",", ".") if total_val else "—"
+
+        try:
+            images_list = json.loads(l.get("images") or "[]") or []
+        except Exception:
+            images_list = []
+        modal_data = {
+            "id":           l["id"],
+            "url":          l.get("url", "#"),
+            "title":        clean_title(l.get("title")),
+            "street":       l.get("street") or "",
+            "neighborhood": l.get("neighborhood") or "",
+            "price":        price_val,
+            "condo":        condo_val,
+            "iptu":         iptu_val,
+            "area":         l.get("area") or 0,
+            "bedrooms":     l.get("bedrooms") or 0,
+            "posted_at":    l.get("posted_at") or "",
+            "images":       images_list,
+        }
+        if not is_checked:
+            fresh_listings_data.append({
+                "id":           l["id"],
+                "title":        modal_data["title"],
+                "neighborhood": modal_data["neighborhood"],
+                "price":        price_val,
+            })
+        listing_data = _html.escape(json.dumps(modal_data, ensure_ascii=False), quote=True)
+
+        title_cell = clean_title(l.get("title"))
+        if is_fresh and not is_gone:
+            title_cell += ' <span class="fresh-badge">novo</span>'
+        if is_gone:
+            title_cell += ' <span class="gone-badge">SUMIU</span>'
+
+        rows_html.append(ROW_TEMPLATE.format(
+            css_class=css_class,
+            title=title_cell,
+            street=l.get("street") or "—",
+            neighborhood=l.get("neighborhood") or "—",
+            seen_at=format_seen_at(l.get("seen_at")),
+            bedrooms=bedrooms,
+            area=area,
+            price=price,
+            total=total_str,
+            url=l.get("url", "#"),
+            listing_id=l["id"],
+            action_label=action_label,
+            track_label=track_label,
+            track_btn_class=track_btn_class,
+            thumb_html=build_thumb_html(l.get("images")),
+            listing_data=listing_data,
+        ))
+
+    fresh_count = len(fresh_listings_data)
+    fresh_badge = (
+        f' &nbsp;·&nbsp; <strong style="color:#2e7d32">{fresh_count} recentes</strong>'
+        if fresh_count else ""
+    )
+    stats = {
+        "new": new_count, "checked": checked_count, "total": total,
+        "fresh_badge": fresh_badge,
+    }
+    return rows_html, fresh_listings_data, stats
+
+
+@app.route("/")
+def index():
+    init_db()
+    rows_html, fresh_listings_data, stats = _build_content()
+    html = HTML_TEMPLATE.format(
+        new=stats["new"],
+        checked=stats["checked"],
+        total=stats["total"],
+        fresh_badge=stats["fresh_badge"],
+        fresh_listings_json=json.dumps(fresh_listings_data, ensure_ascii=False),
+        rows="\n".join(rows_html),
+    )
+    return html
+
+
+@app.route("/fragment")
+def fragment():
+    rows_html, fresh_listings_data, stats = _build_content()
+    stats_html = (
+        f'{stats["new"]} novos &nbsp;·&nbsp; {stats["checked"]} vistos'
+        f' &nbsp;·&nbsp; {stats["total"]} total{stats["fresh_badge"]}'
+    )
+    return {"rows": "\n".join(rows_html), "stats": stats_html, "fresh": fresh_listings_data}
+
+
+@app.route("/check/<listing_id>", methods=["POST"])
+def check(listing_id):
+    mark_checked(listing_id)
+    return redirect(url_for("index"))
+
+
+@app.route("/toggle-track/<listing_id>", methods=["POST"])
+def toggle_track(listing_id):
+    toggle_tracked(listing_id)
+    return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    init_db()
+    app.run(debug=True, port=8080)
