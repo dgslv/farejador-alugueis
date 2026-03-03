@@ -1,0 +1,7 @@
+playwright>=1.44
+schedule>=1.2
+flask>=3.0
+pywebview>=5.0
+plyer>=2.1
+pillow>=10.0
+pyinstaller>=6.0

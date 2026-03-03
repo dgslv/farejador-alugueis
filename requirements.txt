@@ -1,0 +1,3 @@
+playwright>=1.44
+schedule>=1.2
+flask>=3.0
