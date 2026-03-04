@@ -38,6 +38,24 @@ def init_db():
                 conn.execute(ddl)
             except Exception:
                 pass  # column already exists
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS sources (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                url      TEXT NOT NULL UNIQUE,
+                label    TEXT,
+                active   INTEGER NOT NULL DEFAULT 1,
+                added_at TEXT NOT NULL
+            )
+        """)
+        # Seed with hardcoded URLs if table is empty
+        count = conn.execute("SELECT count(*) FROM sources").fetchone()[0]
+        if count == 0:
+            from config import SEARCH_URLS
+            for i, url in enumerate(SEARCH_URLS, 1):
+                conn.execute(
+                    "INSERT OR IGNORE INTO sources (url, label, active, added_at) VALUES (?, ?, 1, ?)",
+                    (url, f"Fonte {i}", datetime.now().isoformat()),
+                )
         conn.commit()
 
 
@@ -111,3 +129,33 @@ def get_tracked_ids() -> set:
     with _connect() as conn:
         rows = conn.execute("SELECT id FROM listings WHERE tracked=1").fetchall()
         return {r[0] for r in rows}
+
+
+def get_sources() -> list:
+    with _connect() as conn:
+        rows = conn.execute("SELECT * FROM sources ORDER BY id").fetchall()
+        return [dict(r) for r in rows]
+
+
+def add_source(url: str, label: str):
+    with _connect() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO sources (url, label, active, added_at) VALUES (?, ?, 1, ?)",
+            (url.strip(), label.strip() or None, datetime.now().isoformat()),
+        )
+        conn.commit()
+
+
+def delete_source(source_id: int):
+    with _connect() as conn:
+        conn.execute("DELETE FROM sources WHERE id=?", (source_id,))
+        conn.commit()
+
+
+def toggle_source(source_id: int):
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE sources SET active = CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=?",
+            (source_id,),
+        )
+        conn.commit()

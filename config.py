@@ -16,33 +16,11 @@ def _app_data_dir() -> Path:
 
 _DATA = _app_data_dir()
 
-SEARCH_URLS = [
-    # Botafogo — existing search
-    (
-        "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/zona-sul/botafogo/apartamento_residencial/"
-        "?transacao=aluguel"
-        "&onde=,Rio+de+Janeiro,Rio+de+Janeiro,Zona+Sul,Botafogo,,,neighborhood,"
-        "BR%3ERio+de+Janeiro%3ENULL%3ERio+de+Janeiro%3EZona+Sul%3EBotafogo,-22.951098,-43.180746,"
-        "&tipos=apartamento_residencial"
-        "&quartos=2,3,4"
-        "&precoTotal=true"
-        "&precoMaximo=8500"
-        "&areaMinima=70"
-    ),
-    # Humaitá
-    (
-        "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/zona-sul/humaita/apartamento_residencial/"
-        "?transacao=aluguel"
-        "&onde=,Rio+de+Janeiro,Rio+de+Janeiro,Zona+Sul,Humait%C3%A1,,,neighborhood,"
-        "BR%3ERio+de+Janeiro%3ENULL%3ERio+de+Janeiro%3EZona+Sul%3EHumaita,-22.956627,-43.198584,"
-        "&tipos=apartamento_residencial"
-        "&quartos=2,3,4"
-        "&precoTotal=true"
-        "&precoMaximo=8500"
-    ),
-]
+# Search URLs are managed via the Fontes tab in the dashboard (stored in DB).
+# Add your VivaReal search URLs there after first launch.
+SEARCH_URLS = []
 
-EXCLUDED_NEIGHBORHOODS = ["copacabana", "laranjeiras", "cosme velho"]
+EXCLUDED_NEIGHBORHOODS = []
 
 DB_PATH = str(_DATA / "listings.db")
 LOG_PATH = str(_DATA / "alerts.log")

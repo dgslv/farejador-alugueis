@@ -180,8 +180,11 @@ async def _extract_listings(page) -> list:
     return results
 
 
-async def fetch_listings() -> list:
+async def fetch_listings(urls: list = None) -> list:
     from storage import is_new as _is_new
+
+    if urls is None:
+        urls = SEARCH_URLS
 
     all_listings: list = []
     seen_ids: set = set()
@@ -204,8 +207,8 @@ async def fetch_listings() -> list:
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         )
 
-        for search_idx, start_url in enumerate(SEARCH_URLS, 1):
-            print(f"  [scraper] search {search_idx}/{len(SEARCH_URLS)}: {start_url[:80]}")
+        for search_idx, start_url in enumerate(urls, 1):
+            print(f"  [scraper] search {search_idx}/{len(urls)}: {start_url[:80]}")
             url = start_url
             for page_num in range(1, MAX_PAGES + 1):
                 print(f"  [scraper] page {page_num}: {url[:100]}")

@@ -5,7 +5,7 @@ from datetime import datetime
 import schedule
 
 from scraper import fetch_listings
-from storage import init_db, is_new, save_listing, get_tracked_ids
+from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources
 from notifier import notify, log_listing
 from config import INTERVAL_MINUTES
 
@@ -13,7 +13,8 @@ from config import INTERVAL_MINUTES
 def run_once():
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Fetching listings...")
     try:
-        listings = asyncio.run(fetch_listings())
+        urls = [s["url"] for s in get_sources() if s["active"]]
+        listings = asyncio.run(fetch_listings(urls))
     except Exception as exc:
         print(f"  ERROR fetching listings: {exc}")
         return
@@ -31,6 +32,8 @@ def run_once():
             print(
                 f"  NEW: {lst['bedrooms']}q {lst['area']}m² R${lst['price']:,} — {lst['url']}"
             )
+        else:
+            save_listing(lst)  # update last_seen_at for existing listings
 
     scraped_ids = {lst["id"] for lst in listings}
     for tid in get_tracked_ids():
