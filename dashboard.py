@@ -2,8 +2,8 @@ import html as _html
 import json
 import re
 from datetime import datetime, timedelta
-from flask import Flask, redirect, url_for
-from storage import get_all_listings, mark_checked, toggle_tracked, init_db
+from flask import Flask, redirect, url_for, request
+from storage import get_all_listings, mark_checked, toggle_tracked, init_db, get_sources, add_source, delete_source, toggle_source
 
 app = Flask(__name__)
 
@@ -88,6 +88,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .dm-open-btn {{ display:inline-block; background:#1976d2; color:white; border:none; padding:10px 22px; border-radius:6px; font-size:14px; cursor:pointer; text-decoration:none; }}
   .dm-open-btn:hover {{ background:#1256a3; }}
 
+  /* Nav */
+  nav {{ display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #ddd; padding-bottom:0; }}
+  .nav-link {{ padding:7px 18px; border-radius:6px 6px 0 0; font-size:14px; font-weight:500; text-decoration:none; color:#555; background:#e8e8e8; border:1px solid #ddd; border-bottom:none; margin-bottom:-2px; }}
+  .nav-link:hover {{ background:#d5d5d5; color:#222; }}
+  .nav-link.active {{ background:white; color:#222; border-color:#ddd; font-weight:600; }}
+
+  /* Sources table */
+  .src-url {{ max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#555; }}
+  .src-label {{ font-weight:500; }}
+  .badge-active {{ background:#2e7d32; color:white; font-size:11px; padding:2px 8px; border-radius:10px; }}
+  .badge-paused {{ background:#999; color:white; font-size:11px; padding:2px 8px; border-radius:10px; }}
+  .add-form {{ margin-top:24px; background:white; border-radius:8px; padding:20px 24px; box-shadow:0 1px 4px rgba(0,0,0,.1); display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }}
+  .add-form label {{ font-size:13px; color:#555; display:block; margin-bottom:4px; }}
+  .add-form input {{ border:1px solid #ccc; border-radius:4px; padding:6px 10px; font-size:13px; }}
+  .add-form input[name="url"] {{ width:420px; }}
+  .add-form input[name="label"] {{ width:160px; }}
+  .btn-danger {{ background:#c62828; }}
+  .btn-danger:hover {{ background:#b71c1c; }}
+  .btn-secondary {{ background:#546e7a; }}
+  .btn-secondary:hover {{ background:#37474f; }}
+
   /* Toast */
   #toast {{ display:none; position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 22px; border-radius:8px; font-size:14px; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.25); z-index:3000; cursor:pointer; }}
   #toast.show {{ display:block; animation:fadeout 0.4s ease 4.6s forwards; }}
@@ -96,7 +117,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div id="toast" onclick="this.classList.remove('show')"></div>
-<h1>Apartamentos</h1>
+<h1>Farejador de Aluguéis</h1>
+<nav>
+  <a href="/" class="nav-link active">Apartamentos</a>
+  <a href="/sources" class="nav-link">Fontes</a>
+</nav>
 <div class="stats"><span>{new} novos &nbsp;·&nbsp; {checked} vistos &nbsp;·&nbsp; {total} total{fresh_badge}</span><button id="toggle-checked-btn" onclick="toggleChecked()">Ocultar vistos</button><button id="enable-notif-btn" onclick="enableNotifications()" style="display:none;background:#e65100;font-size:12px;padding:3px 10px;">🔔 Ativar notificações</button></div>
 <table>
   <thead>
@@ -428,8 +453,8 @@ def _build_content():
         is_checked = bool(l.get("checked"))
         is_tracked = bool(l.get("tracked"))
         seen_at_str = l.get("seen_at") or ""
-        last_seen = l.get("last_seen_at") or seen_at_str
-        is_gone = is_tracked and bool(last_seen) and last_seen < gone_cutoff_iso
+        last_seen_at = l.get("last_seen_at")
+        is_gone = is_tracked and bool(last_seen_at) and last_seen_at < gone_cutoff_iso
         is_fresh = not is_checked and seen_at_str >= cutoff_iso
 
         classes = []
@@ -553,6 +578,142 @@ def check(listing_id):
 def toggle_track(listing_id):
     toggle_tracked(listing_id)
     return redirect(url_for("index"))
+
+
+SOURCES_TEMPLATE = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Fontes — Aluguel</title>
+<style>
+  body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
+  h1 {{ margin-bottom: 4px; }}
+  nav {{ display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #ddd; padding-bottom:0; }}
+  .nav-link {{ padding:7px 18px; border-radius:6px 6px 0 0; font-size:14px; font-weight:500; text-decoration:none; color:#555; background:#e8e8e8; border:1px solid #ddd; border-bottom:none; margin-bottom:-2px; }}
+  .nav-link:hover {{ background:#d5d5d5; color:#222; }}
+  .nav-link.active {{ background:white; color:#222; border-color:#ddd; font-weight:600; }}
+  table {{ border-collapse: collapse; width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); }}
+  th {{ background: #222; color: white; padding: 10px 14px; text-align: left; font-size: 13px; }}
+  td {{ padding: 10px 14px; font-size: 14px; border-bottom: 1px solid #eee; vertical-align: middle; }}
+  tr:last-child td {{ border-bottom: none; }}
+  .src-url {{ max-width:480px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#555; display:block; }}
+  .src-label {{ font-weight:500; margin-bottom:2px; }}
+  .badge-active {{ background:#2e7d32; color:white; font-size:11px; padding:2px 8px; border-radius:10px; }}
+  .badge-paused {{ background:#999; color:white; font-size:11px; padding:2px 8px; border-radius:10px; }}
+  button {{ cursor:pointer; border:none; padding:5px 12px; border-radius:4px; font-size:12px; color:white; }}
+  .btn-toggle {{ background:#546e7a; }}
+  .btn-toggle:hover {{ background:#37474f; }}
+  .btn-danger {{ background:#c62828; }}
+  .btn-danger:hover {{ background:#b71c1c; }}
+  .add-form {{ margin-top:24px; background:white; border-radius:8px; padding:20px 24px; box-shadow:0 1px 4px rgba(0,0,0,.1); }}
+  .add-form h3 {{ margin:0 0 14px; font-size:15px; }}
+  .add-form .row {{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }}
+  .add-form label {{ font-size:12px; color:#666; display:block; margin-bottom:3px; }}
+  .add-form input {{ border:1px solid #ccc; border-radius:4px; padding:7px 10px; font-size:13px; }}
+  .add-form input[name="url"] {{ width:460px; }}
+  .add-form input[name="label"] {{ width:160px; }}
+  .btn-add {{ background:#1565c0; color:white; border:none; padding:7px 18px; border-radius:4px; font-size:13px; cursor:pointer; }}
+  .btn-add:hover {{ background:#0d47a1; }}
+  .empty {{ color:#999; padding:24px; text-align:center; }}
+</style>
+</head>
+<body>
+<h1>Farejador de Aluguéis</h1>
+<nav>
+  <a href="/" class="nav-link">Apartamentos</a>
+  <a href="/sources" class="nav-link active">Fontes</a>
+</nav>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fonte</th>
+      <th>Status</th>
+      <th>Adicionada</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows}
+  </tbody>
+</table>
+
+<div class="add-form">
+  <h3>Adicionar nova fonte</h3>
+  <form method="POST" action="/sources/add">
+    <div class="row">
+      <div>
+        <label>Nome (opcional)</label>
+        <input name="label" placeholder="Ex: Botafogo 2q" autocomplete="off">
+      </div>
+      <div>
+        <label>URL do VivaReal</label>
+        <input name="url" placeholder="https://www.vivareal.com.br/aluguel/..." required autocomplete="off">
+      </div>
+      <button type="submit" class="btn-add">+ Adicionar</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>"""
+
+SOURCE_ROW = """<tr>
+  <td>
+    <div class="src-label">{label}</div>
+    <span class="src-url" title="{url}">{url}</span>
+  </td>
+  <td><span class="{badge_class}">{badge_label}</span></td>
+  <td style="font-size:12px;color:#999">{added_at}</td>
+  <td style="display:flex;gap:6px">
+    <form method="POST" action="/sources/toggle/{sid}">
+      <button type="submit" class="btn-toggle">{toggle_label}</button>
+    </form>
+    <form method="POST" action="/sources/delete/{sid}" onsubmit="return confirm('Remover esta fonte?')">
+      <button type="submit" class="btn-danger">Remover</button>
+    </form>
+  </td>
+</tr>"""
+
+
+@app.route("/sources")
+def sources():
+    init_db()
+    rows = []
+    for s in get_sources():
+        is_active = bool(s["active"])
+        added = s["added_at"][:16].replace("T", " ") if s["added_at"] else "—"
+        rows.append(SOURCE_ROW.format(
+            sid=s["id"],
+            label=s["label"] or "—",
+            url=s["url"],
+            badge_class="badge-active" if is_active else "badge-paused",
+            badge_label="Ativa" if is_active else "Pausada",
+            toggle_label="Pausar" if is_active else "Ativar",
+            added_at=added,
+        ))
+    body = "\n".join(rows) if rows else '<tr><td colspan="4" class="empty">Nenhuma fonte cadastrada.</td></tr>'
+    return SOURCES_TEMPLATE.format(rows=body)
+
+
+@app.route("/sources/add", methods=["POST"])
+def source_add():
+    url = request.form.get("url", "").strip()
+    label = request.form.get("label", "").strip()
+    if url:
+        add_source(url, label)
+    return redirect(url_for("sources"))
+
+
+@app.route("/sources/delete/<int:sid>", methods=["POST"])
+def source_delete(sid):
+    delete_source(sid)
+    return redirect(url_for("sources"))
+
+
+@app.route("/sources/toggle/<int:sid>", methods=["POST"])
+def source_toggle(sid):
+    toggle_source(sid)
+    return redirect(url_for("sources"))
 
 
 if __name__ == "__main__":
