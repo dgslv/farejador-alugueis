@@ -3,6 +3,7 @@ import json
 import re
 import random
 from playwright.async_api import async_playwright
+from playwright_stealth import Stealth
 from config import SEARCH_URLS, MAX_PAGES, HEADLESS, USER_AGENT, EXCLUDED_NEIGHBORHOODS
 
 # URL pattern: /imovel/apartamento-N-quartos-...-Xm2-aluguel-RSPRICE-id-ID/
@@ -190,6 +191,8 @@ async def fetch_listings(urls: list = None) -> list:
     seen_ids: set = set()
 
     async with async_playwright() as p:
+        stealth = Stealth()
+        stealth.hook_playwright_context(p)
         browser = await p.chromium.launch(
             headless=HEADLESS,
             args=[
@@ -198,52 +201,50 @@ async def fetch_listings(urls: list = None) -> list:
                 "--disable-dev-shm-usage",
             ],
         )
-        context = await browser.new_context(
-            user_agent=USER_AGENT,
-            viewport={"width": 1366, "height": 768},
-        )
-        page = await context.new_page()
-        await page.add_init_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        )
+        try:
+            context = await browser.new_context(
+                user_agent=USER_AGENT,
+                viewport={"width": 1366, "height": 768},
+            )
+            page = await context.new_page()
 
-        for search_idx, start_url in enumerate(urls, 1):
-            print(f"  [scraper] search {search_idx}/{len(urls)}: {start_url[:80]}")
-            url = start_url
-            for page_num in range(1, MAX_PAGES + 1):
-                print(f"  [scraper] page {page_num}: {url[:100]}")
-                await page.goto(url, wait_until="networkidle", timeout=60_000)
-                await asyncio.sleep(random.uniform(1.5, 3))
+            for search_idx, start_url in enumerate(urls, 1):
+                print(f"  [scraper] search {search_idx}/{len(urls)}: {start_url[:80]}")
+                url = start_url
+                for page_num in range(1, MAX_PAGES + 1):
+                    print(f"  [scraper] page {page_num}: {url[:100]}")
+                    await page.goto(url, wait_until="networkidle", timeout=60_000)
+                    await asyncio.sleep(random.uniform(1.5, 3))
 
-                page_listings = await _extract_listings(page)
-                print(f"  [scraper] found {len(page_listings)} listings on page {page_num}")
+                    page_listings = await _extract_listings(page)
+                    print(f"  [scraper] found {len(page_listings)} listings on page {page_num}")
 
-                # Deduplicate, filter excluded neighborhoods, split into known vs new
-                fresh = []
-                for lst in page_listings:
-                    url_lower = lst["url"].lower()
-                    neighborhood_lower = lst.get("neighborhood", "").lower()
-                    if any(n in url_lower or n in neighborhood_lower for n in EXCLUDED_NEIGHBORHOODS):
-                        continue
-                    if lst["id"] not in seen_ids:
-                        seen_ids.add(lst["id"])
-                        all_listings.append(lst)
-                        if _is_new(lst["id"]):
-                            fresh.append(lst)
+                    # Deduplicate, filter excluded neighborhoods, split into known vs new
+                    fresh = []
+                    for lst in page_listings:
+                        url_lower = lst["url"].lower()
+                        neighborhood_lower = lst.get("neighborhood", "").lower()
+                        if any(n in url_lower or n in neighborhood_lower for n in EXCLUDED_NEIGHBORHOODS):
+                            continue
+                        if lst["id"] not in seen_ids:
+                            seen_ids.add(lst["id"])
+                            all_listings.append(lst)
+                            if _is_new(lst["id"]):
+                                fresh.append(lst)
 
-                new_on_page = len(fresh)
-                print(f"  [scraper] {new_on_page} new listings on page {page_num}")
+                    new_on_page = len(fresh)
+                    print(f"  [scraper] {new_on_page} new listings on page {page_num}")
 
-                # Follow the "próxima página" link if present
-                next_link = page.locator('a[aria-label="próxima página"]:not([aria-disabled="true"])')
-                if await next_link.count() == 0:
-                    print(f"  [scraper] no next page button, done.")
-                    break
-                next_href = await next_link.get_attribute("href")
-                if not next_href:
-                    break
-                url = "https://www.vivareal.com.br" + next_href if next_href.startswith("/") else next_href
-
-        await browser.close()
+                    # Follow the "próxima página" link if present
+                    next_link = page.locator('a[aria-label="próxima página"]:not([aria-disabled="true"])')
+                    if await next_link.count() == 0:
+                        print(f"  [scraper] no next page button, done.")
+                        break
+                    next_href = await next_link.get_attribute("href")
+                    if not next_href:
+                        break
+                    url = "https://www.vivareal.com.br" + next_href if next_href.startswith("/") else next_href
+        finally:
+            await browser.close()
 
     return all_listings
