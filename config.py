@@ -28,7 +28,7 @@ INTERVAL_MINUTES = 15
 PAGE_SIZE = 36
 MAX_PAGES = 5
 
-HEADLESS = False
+HEADLESS = True
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
