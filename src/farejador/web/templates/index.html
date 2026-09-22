@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set active = "index" %}
+{% block content %}
+<div class="stats"><span>{{ stats.new }} novos &nbsp;·&nbsp; {{ stats.checked }} vistos &nbsp;·&nbsp; {{ stats.total }} total{{ stats.fresh_badge | safe }}</span><button id="toggle-checked-btn" onclick="toggleChecked()">Ocultar vistos</button><button id="enable-notif-btn" onclick="enableNotifications()" style="display:none;background:#e65100;font-size:12px;padding:3px 10px;">🔔 Ativar notificações</button></div>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Título</th>
+      <th>Rua</th>
+      <th>Bairro</th>
+      <th>Encontrado</th>
+      <th>Quartos</th>
+      <th>Área</th>
+      <th>Aluguel</th>
+      <th>Total</th>
+      <th>Ação</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% include "_rows.html" %}
+  </tbody>
+</table>
+
+<!-- Detail modal -->
+<div id="detail-modal">
+  <div class="dm-box">
+    <span class="dm-close" onclick="closeDetail()">&#x2715;</span>
+    <p class="dm-title" id="dm-title"></p>
+    <p class="dm-addr" id="dm-addr"></p>
+    <div class="dm-gallery" id="dm-gallery"></div>
+    <div class="dm-prices" id="dm-prices"></div>
+    <div class="dm-meta" id="dm-meta"></div>
+    <a id="dm-open-btn" class="dm-open-btn" href="#" target="_blank">Abrir anúncio</a>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <span id="lb-close" onclick="closeLb()">&#x2715;</span>
+  <img id="lb-img" src="" alt="">
+  <div id="lb-nav">
+    <button onclick="lbStep(-1)">&#8592;</button>
+    <span id="lb-counter"></span>
+    <button onclick="lbStep(1)">&#8594;</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>var freshListings = {{ fresh | tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

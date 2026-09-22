@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Gera os ícones do app a partir de assets/farejador.svg.
+"""Gera o logo e os ícones do app a partir de assets/farejador.svg.
 
 Saídas (todas versionadas, para o build não depender deste script):
-  assets/logo.png           512 px — README e painel
-  assets/farejador.ico      Windows (16–256 px)
-  assets/farejador.icns     macOS (só roda no macOS: usa o iconutil do sistema)
+  assets/logo.png                         512 px — README
+  src/farejador/web/static/logo.png       512 px — painel e favicon (dado do pacote)
+  packaging/icons/farejador.ico           Windows (16–256 px)
+  packaging/icons/farejador.icns          macOS (só roda no macOS: usa o iconutil do sistema)
 
-Requer: pip install playwright pillow  +  playwright install chromium
-Uso:    python scripts/make-icons.py
+Requer: pip install -e ".[desktop]"  +  playwright install chromium
+Uso:    python packaging/make-icons.py
 """
 
 import shutil
@@ -20,9 +21,10 @@ from PIL import Image
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "assets"
-SVG = ASSETS / "farejador.svg"
-ICONSET_SIZES = [16, 32, 64, 128, 256, 512, 1024]
+SVG = ROOT / "assets" / "farejador.svg"
+ICONS = ROOT / "packaging" / "icons"
+LOGO_TARGETS = [ROOT / "assets" / "logo.png", ROOT / "src" / "farejador" / "web" / "static" / "logo.png"]
+ICONSET_SIZES = [16, 32, 64, 128, 256, 512]
 
 
 def render_png(size: int) -> Image.Image:
@@ -48,27 +50,27 @@ def render_png(size: int) -> Image.Image:
 
 def main() -> None:
     master = render_png(1024)
+    ICONS.mkdir(parents=True, exist_ok=True)
 
-    master.resize((512, 512), Image.LANCZOS).save(ASSETS / "logo.png", optimize=True)
-    print("assets/logo.png")
+    logo = master.resize((512, 512), Image.LANCZOS)
+    for target in LOGO_TARGETS:
+        logo.save(target, optimize=True)
+        print(target.relative_to(ROOT))
 
-    master.save(
-        ASSETS / "farejador.ico",
-        sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)],
-    )
-    print("assets/farejador.ico")
+    master.save(ICONS / "farejador.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
+    print("packaging/icons/farejador.ico")
 
     if sys.platform != "darwin" or not shutil.which("iconutil"):
-        print("assets/farejador.icns: pulado (precisa do iconutil do macOS)")
+        print("packaging/icons/farejador.icns: pulado (precisa do iconutil do macOS)")
         return
     with tempfile.TemporaryDirectory() as tmp:
         iconset = Path(tmp) / "farejador.iconset"
         iconset.mkdir()
-        for size in ICONSET_SIZES[:-1]:
+        for size in ICONSET_SIZES:
             master.resize((size, size), Image.LANCZOS).save(iconset / f"icon_{size}x{size}.png")
             master.resize((size * 2, size * 2), Image.LANCZOS).save(iconset / f"icon_{size}x{size}@2x.png")
-        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(ASSETS / "farejador.icns")], check=True)
-    print("assets/farejador.icns")
+        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(ICONS / "farejador.icns")], check=True)
+    print("packaging/icons/farejador.icns")
 
 
 if __name__ == "__main__":

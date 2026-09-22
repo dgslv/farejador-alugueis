@@ -1,7 +1,17 @@
+"""Notificação do sistema e o alerts.log.
+
+macOS dentro do .app: UNUserNotificationCenter (pede permissão na primeira abertura).
+macOS do código-fonte: osascript. Windows/Linux: plyer.
+"""
+
+import logging
 import sys
 from datetime import datetime
 
-from config import APP_NAME, LOG_PATH
+from farejador import paths
+from farejador.config import APP_NAME
+
+log = logging.getLogger(__name__)
 
 
 def _is_mac_bundle() -> bool:
@@ -10,7 +20,7 @@ def _is_mac_bundle() -> bool:
     return sys.platform == "darwin" and bool(getattr(sys, "frozen", False))
 
 
-def request_permission():
+def request_permission() -> None:
     """Ask macOS for notification permission (shows the system dialog once)."""
     if not _is_mac_bundle():
         return
@@ -22,13 +32,13 @@ def request_permission():
         )
 
         def done(granted, error):
-            print(f"  [notify] permission granted={granted} error={error}")
+            log.info("permission granted=%s error=%s", granted, error)
 
         UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions_completionHandler_(
             UNAuthorizationOptionAlert | UNAuthorizationOptionSound, done
         )
     except Exception as exc:
-        print(f"  [notify] permission request failed: {exc}")
+        log.warning("permission request failed: %s", exc)
 
 
 def _notify_mac_native(title: str, message: str) -> bool:
@@ -41,45 +51,46 @@ def _notify_mac_native(title: str, message: str) -> bool:
             UNNotificationSound,
             UNUserNotificationCenter,
         )
+
         content = UNMutableNotificationContent.alloc().init()
         content.setTitle_(title)
         content.setBody_(message)
         content.setSound_(UNNotificationSound.defaultSound())
-        request = UNNotificationRequest.requestWithIdentifier_content_trigger_(
-            str(uuid.uuid4()), content, None
-        )
+        request = UNNotificationRequest.requestWithIdentifier_content_trigger_(str(uuid.uuid4()), content, None)
 
         def done(error):
             if error is not None:
-                print(f"  [notify] delivery error: {error}")
+                log.warning("delivery error: %s", error)
 
         UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest_withCompletionHandler_(
             request, done
         )
         return True
     except Exception as exc:
-        print(f"  [notify] native notification failed: {exc}")
+        log.warning("native notification failed: %s", exc)
         return False
 
 
-def notify(title: str, message: str):
+def notify(title: str, message: str) -> None:
     if sys.platform == "darwin":
         if _is_mac_bundle() and _notify_mac_native(title, message):
             return
         # Dev fallback (plyer needs pyobjus on mac, which we don't ship):
         # osascript, shown as coming from Script Editor.
         import subprocess
+
         script = f'display notification "{message}" with title "{title}"'
         subprocess.run(["osascript", "-e", script], check=False)
         return
     try:
         from plyer import notification  # Windows / Linux
+
         notification.notify(title=title, message=message, app_name=APP_NAME, timeout=8)
     except Exception as exc:
-        print(f"  [notify] failed: {exc}")
+        log.warning("notification failed: %s", exc)
 
 
-def log_listing(listing: dict):
+def log_listing(listing: dict) -> None:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = (
         f"[{timestamp}] "
@@ -89,5 +100,5 @@ def log_listing(listing: dict):
         f"{listing.get('title', '')} · "
         f"{listing.get('url')}\n"
     )
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
+    with open(paths.alerts_log_path(), "a", encoding="utf-8") as f:
         f.write(line)

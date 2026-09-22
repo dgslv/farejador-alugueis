@@ -25,6 +25,7 @@ jobs:
           python-version: "3.11"
       - run: pip install ruff==0.6.9   # mesma versão do .pre-commit-config.yaml
       - run: ruff check .
+      - run: ruff format --check .
 
   test:
     name: test (${{ matrix.os }})
@@ -39,6 +40,6 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: requirements*.txt
-      - run: pip install -r requirements-dev.txt
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
       - run: pytest

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<title>{% block title %}Farejador de Aluguéis{% endblock %}</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div id="toast" onclick="this.classList.remove('show')"></div>
+<h1><img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="">Farejador de Aluguéis</h1>
+<nav>
+  <a href="{{ url_for('dashboard.index') }}" class="nav-link{% if active == 'index' %} active{% endif %}">Apartamentos</a>
+  <a href="{{ url_for('dashboard.sources') }}" class="nav-link{% if active == 'sources' %} active{% endif %}">Fontes</a>
+</nav>
+{% block content %}{% endblock %}
+{% block scripts %}{% endblock %}
+</body>
+</html>
