@@ -79,28 +79,30 @@ Para quem programa ou quer usar no Linux. Requisitos: [Python](https://www.pytho
 git clone https://github.com/dgslv/farejador-alugueis.git
 cd farejador-alugueis
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -e .
 playwright install chromium
-python app.py
+farejador
 ```
 
 | Comando | O que faz |
 |---|---|
-| `python app.py` | App completo, em janela nativa (o mesmo que o instalador) |
-| `python main.py` | Só o robô de busca, no terminal |
-| `python dashboard.py` | Só o painel, em <http://127.0.0.1:8080> no seu navegador |
-| `scripts/build-macos.sh` · `scripts\build-windows.bat` | Gera o `.dmg` / `.exe` em `dist/` |
+| `farejador` | App completo, em janela nativa (o mesmo que o instalador) |
+| `farejador --headless` | Só o robô de busca, no terminal |
+| `farejador --dashboard` | Só o painel, em <http://127.0.0.1:8080> no seu navegador |
+| `packaging/build-macos.sh` · `packaging\build-windows.bat` | Gera o `.dmg` / `.exe` em `dist/` |
+
+Porta ocupada? `FAREJADOR_PORT=8090 farejador`. Outra pasta de dados? `FAREJADOR_DATA_DIR=/caminho farejador`.
 
 ## Como funciona
 
 ```
-  a cada N min        Chromium headless          SQLite              janela nativa
- ┌───────────┐  URLs  ┌────────────┐  cards  ┌────────────┐  HTML  ┌──────────────┐
- │  main.py  │ ─────▶ │ scraper.py │ ──────▶ │ storage.py │ ◀────▶ │ dashboard.py │
- │ agendador │        │ Playwright │         │listings.db │        │  em app.py   │
- └───────────┘        └────────────┘         └────────────┘        └──────────────┘
-       │ anúncio novo dentro do orçamento
-       └──────▶ notifier.py → notificação do sistema + alerts.log
+  a cada N min          Chromium headless            SQLite             janela nativa
+ ┌──────────────┐ URLs ┌───────────────────┐ cards ┌──────────┐ HTML ┌──────────────┐
+ │ scheduler.py │ ───▶ │scrapers/vivareal.py│ ────▶ │  db.py   │ ◀──▶ │ web/ (Flask) │
+ │  agendador   │      │    Playwright     │       │listings.db│      │ em desktop.py│
+ └──────────────┘      └───────────────────┘       └──────────┘      └──────────────┘
+        │ anúncio novo dentro do orçamento
+        └──────▶ notify.py → notificação do sistema + alerts.log
 ```
 
 Detalhes de cada peça, esquema do banco e decisões de projeto: [docs/como-funciona.md](docs/como-funciona.md).

@@ -18,23 +18,25 @@ Requisitos: Python 3.9+ (o CI e os instaladores usam **3.11** — prefira essa),
 git clone https://github.com/<seu-usuario>/farejador-alugueis.git   # seu fork
 cd farejador-alugueis
 python -m venv .venv && source .venv/bin/activate                   # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"            # o pacote em modo editável + pytest, ruff, pre-commit
 playwright install chromium        # navegador usado pelo scraper (~150 MB)
-pre-commit install                 # roda o lint em cada commit
+pre-commit install                 # roda lint e formatação em cada commit
 ```
 
-Rodando:
+O código fica em `src/farejador/` (layout `src/`, o recomendado pela PyPA), os testes em `tests/`, o empacotamento em `packaging/` e as ferramentas de mantenedor em `scripts/`.
+
+Rodando (`python -m farejador` é o mesmo que `farejador`):
 
 | Comando | O que faz |
 |---|---|
-| `python app.py` | App completo em janela nativa (o que o instalador entrega) |
-| `python main.py` | Só o robô de busca, no terminal |
-| `python dashboard.py` | Só o painel, em <http://127.0.0.1:8080> (com auto-reload do Flask) |
+| `farejador` | App completo em janela nativa (o que o instalador entrega) |
+| `farejador --headless` | Só o robô de busca, no terminal |
+| `farejador --dashboard` | Só o painel, em <http://127.0.0.1:8080> no seu navegador |
 
-Para não misturar com os seus dados de uso real, aponte a pasta de dados para outro lugar:
+Para não misturar com os seus dados de uso real, aponte a pasta de dados para outro lugar (e a porta, se a 8080 estiver ocupada):
 
 ```bash
-FAREJADOR_DATA_DIR=/tmp/farejador-dev python app.py
+FAREJADOR_DATA_DIR=/tmp/farejador-dev FAREJADOR_PORT=8090 farejador
 ```
 
 Como cada peça se encaixa: [docs/como-funciona.md](docs/como-funciona.md).
@@ -44,6 +46,7 @@ Como cada peça se encaixa: [docs/como-funciona.md](docs/como-funciona.md).
 ```bash
 pytest            # a suíte inteira, ~1 s, sem rede e sem navegador
 ruff check .      # lint (ruff check --fix corrige o que dá)
+ruff format .     # formatação (o CI confere com --check)
 ```
 
 O que esperamos de um PR com código:
@@ -57,7 +60,8 @@ Um teste marcado com `xfail(strict=True)` documenta um bug conhecido: ele *deve*
 
 ## Estilo
 
-- **Lint**: `ruff` com as regras em [`pyproject.toml`](pyproject.toml). O CI roda o mesmo comando; se passa local, passa lá.
+- **Lint e formatação**: `ruff check` e `ruff format`, com as regras em [`pyproject.toml`](pyproject.toml). O CI roda os mesmos comandos; se passa local, passa lá.
+- **Sem `print`**: use `logging` (`log = logging.getLogger(__name__)`); no app empacotado tudo vai para o `app.log`.
 - **Textos do app e documentação em português**; identificadores, comentários de código e mensagens de commit em inglês (é o que o código já faz).
 - **Comentários explicam o porquê**, não o quê. O código já diz o quê.
 - **Mudança cirúrgica.** Toque só no que a sua mudança exige; não reformate código vizinho. Achou algo errado por perto? Abra uma issue ou um PR separado.
@@ -89,7 +93,7 @@ Branch a partir de `main`, nome `tipo/descricao-curta` (ex. `fix/preco-com-centa
 5. Alguém — talvez o mantenedor, talvez outra pessoa — vai revisar. Responda aos comentários com commits novos (não reescreva o histórico da branch durante a revisão; fica mais fácil acompanhar).
 6. Com CI verde e aprovação do mantenedor, ele faz o merge. A branch é apagada automaticamente.
 
-**Mexeu em empacotamento** (`*.spec`, `requirements*.txt`, `scripts/build-*`, `app.py`, `version.py`)? O workflow *Release* roda automaticamente no seu PR e deixa os instaladores dos três sistemas como artefatos (aba *Actions* → o run do seu PR → *Artifacts*). Baixe o do seu sistema, instale e conte no PR o que aconteceu — isso é o que valida a mudança, não o build ter ficado verde.
+**Mexeu em empacotamento** (`packaging/**`, `pyproject.toml`, `src/farejador/desktop.py`, `__main__.py`)? O workflow *Release* roda automaticamente no seu PR e deixa os instaladores dos três sistemas como artefatos (aba *Actions* → o run do seu PR → *Artifacts*). Baixe o do seu sistema, instale e conte no PR o que aconteceu — isso é o que valida a mudança, não o build ter ficado verde.
 
 ## Revisando o PR de outra pessoa
 

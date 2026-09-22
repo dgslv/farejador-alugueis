@@ -43,6 +43,7 @@ O painel roda num servidor local na porta **8080**. Se outro programa (ou outra 
 
 - Confira se não há outro Farejador aberto (macOS: ⌘Tab; Windows: barra de tarefas / Gerenciador de Tarefas).
 - Feche o outro programa que usa a porta 8080 e abra de novo.
+- Ou mude a porta do Farejador: defina a variável de ambiente `FAREJADOR_PORT` (ex. `8090`) antes de abrir o app — rodando do código-fonte, `FAREJADOR_PORT=8090 farejador`.
 - No `app.log`, a mensagem é `Address already in use`.
 
 ## "Checked 0 listings" / nenhum anúncio aparece

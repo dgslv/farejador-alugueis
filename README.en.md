@@ -19,10 +19,10 @@ Installers for macOS (Apple Silicon and Intel) and Windows are on the [Releases]
 git clone https://github.com/dgslv/farejador-alugueis.git
 cd farejador-alugueis
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 playwright install chromium
-python app.py        # desktop app; `python main.py` = scraper only; `python dashboard.py` = dashboard only
-pytest && ruff check .
+farejador            # desktop app; `--headless` = scraper only; `--dashboard` = dashboard only
+pytest && ruff check . && ruff format --check .
 ```
 
 Architecture: [docs/como-funciona.md](docs/como-funciona.md) (Portuguese, but the diagram and tables translate easily).

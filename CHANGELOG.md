@@ -9,8 +9,12 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Mudado
 
 - O app agora se chama **Farejador de Aluguéis**: os instaladores são `Farejador.app` / `Farejador.exe` e a pasta de dados passa de `Aluguel` para `Farejador`. A pasta antiga é migrada automaticamente na primeira abertura — nada se perde.
+- Código reorganizado no pacote `farejador` (layout `src/`), instalável com `pip install -e .`; um único comando `farejador` (`--headless`, `--dashboard`, `--version`) substitui `python app.py` / `main.py` / `dashboard.py`.
+- Painel em templates Jinja + `static/` (mesma aparência); logs com `logging` (timestamps e níveis) no `app.log`.
 
 ### Adicionado
+
+- Variável de ambiente `FAREJADOR_PORT` para mudar a porta do painel quando a 8080 está ocupada.
 
 - Logo e ícone próprios: no `.app`, no `.exe`, no painel e na tela de primeira abertura (`assets/`, gerados por `scripts/make-icons.py`).
 - Projeto aberto no GitHub: README para quem não programa, guia de contribuição, código de conduta, política de segurança e regras de governança/merge.
@@ -25,6 +29,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Removido
 
 - Dependência `schedule`, que não era usada.
+- `menubar.py` (ícone da barra de menus do macOS que lia um log que não existe mais) e os `requirements*.txt` — as dependências agora ficam no `pyproject.toml`.
 
 ## [1.2.0] - 2026-09-22
 
