@@ -19,7 +19,8 @@ from storage import (
     toggle_tracked,
 )
 
-app = Flask(__name__)
+# assets/ (logo) é servido em /assets; no app empacotado a pasta vai junto (ver *.spec).
+app = Flask(__name__, static_folder="assets", static_url_path="/assets")
 
 NEW_THRESHOLD_HOURS = 24
 
@@ -29,9 +30,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
 <title>Farejador de Aluguéis</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
-  h1 {{ margin-bottom: 4px; }}
+  h1 {{ margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }}
+  h1 .logo {{ width: 44px; height: 44px; border-radius: 10px; }}
   .stats {{ color: #555; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
   #toggle-checked-btn {{ background: #999; color: white; border: none; padding: 3px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }}
   #toggle-checked-btn:hover {{ background: #777; }}
@@ -132,7 +135,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div id="toast" onclick="this.classList.remove('show')"></div>
-<h1>Farejador de Aluguéis</h1>
+<h1><img class="logo" src="/assets/logo.png" alt="">Farejador de Aluguéis</h1>
 <nav>
   <a href="/" class="nav-link active">Apartamentos</a>
   <a href="/sources" class="nav-link">Fontes</a>
@@ -604,9 +607,11 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
 <title>Fontes — Farejador de Aluguéis</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
-  h1 {{ margin-bottom: 4px; }}
+  h1 {{ margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }}
+  h1 .logo {{ width: 44px; height: 44px; border-radius: 10px; }}
   nav {{ display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #ddd; padding-bottom:0; }}
   .nav-link {{ padding:7px 18px; border-radius:6px 6px 0 0; font-size:14px; font-weight:500; text-decoration:none; color:#555; background:#e8e8e8; border:1px solid #ddd; border-bottom:none; margin-bottom:-2px; }}
   .nav-link:hover {{ background:#d5d5d5; color:#222; }}
@@ -637,7 +642,7 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-<h1>Farejador de Aluguéis</h1>
+<h1><img class="logo" src="/assets/logo.png" alt="">Farejador de Aluguéis</h1>
 <nav>
   <a href="/" class="nav-link">Apartamentos</a>
   <a href="/sources" class="nav-link active">Fontes</a>

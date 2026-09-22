@@ -1,4 +1,5 @@
-<h1 align="center">🏠 Farejador de Aluguéis</h1>
+<p align="center"><img src="assets/logo.png" width="128" alt="Logo do Farejador de Aluguéis"></p>
+<h1 align="center">Farejador de Aluguéis</h1>
 
 <p align="center">
   Vigia as suas buscas do VivaReal e avisa na hora em que aparece um apartamento novo dentro do seu orçamento.
