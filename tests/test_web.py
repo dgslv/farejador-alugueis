@@ -153,17 +153,18 @@ def test_settings_save_ignores_garbage_and_keeps_current(client):
 
 
 @pytest.mark.parametrize(
-    ("path", "mimetype", "signature"),
+    ("path", "mimetypes", "signature"),
     [
-        ("/static/logo.png", "image/png", b"\x89PNG\r\n\x1a\n"),
-        ("/static/style.css", "text/css", b"/* Farejador"),
-        ("/static/app.js", "text/javascript", b"// Farejador"),
+        ("/static/logo.png", {"image/png"}, b"\x89PNG\r\n\x1a\n"),
+        ("/static/style.css", {"text/css"}, b"/* Farejador"),
+        # O tipo vem da tabela MIME do sistema: no Windows .js é application/javascript.
+        ("/static/app.js", {"text/javascript", "application/javascript"}, b"// Farejador"),
     ],
 )
-def test_static_files_are_served(client, path, mimetype, signature):
+def test_static_files_are_served(client, path, mimetypes, signature):
     r = client.get(path)
     assert r.status_code == 200
-    assert r.mimetype == mimetype
+    assert r.mimetype in mimetypes
     assert r.data.startswith(signature)
 
 
