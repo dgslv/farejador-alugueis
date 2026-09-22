@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 
 from scraper import fetch_listings
-from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources, get_setting
+from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources, get_setting, count_listings
 from notifier import notify, log_listing
 
 
@@ -17,6 +17,10 @@ def run_once():
         return
 
     max_total_price = get_setting("max_total_price")
+    # Empty DB = first run: everything is "new", don't fire dozens of notifications.
+    first_run = count_listings() == 0
+    if first_run:
+        print("  [notify] first run: saving listings silently")
     new_found = 0
     for lst in listings:
         total = lst["price"] + (lst.get("condo") or 0) + (lst.get("iptu") or 0)
@@ -24,10 +28,11 @@ def run_once():
             continue
         if is_new(lst["id"]):
             save_listing(lst)
-            notify(
-                "Novo Apartamento!",
-                f"{lst['bedrooms']}q · {lst['area']}m² · R${lst['price']:,} — {lst['title']}",
-            )
+            if not first_run:
+                notify(
+                    "Novo Apartamento!",
+                    f"{lst['bedrooms']}q · {lst['area']}m² · R${lst['price']:,} — {lst['title']}",
+                )
             log_listing(lst)
             new_found += 1
             print(

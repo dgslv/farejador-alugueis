@@ -6,3 +6,4 @@ plyer>=2.1
 pillow>=10.0
 pyinstaller>=6.0
 playwright-stealth>=2.0
+pyobjc-framework-UserNotifications>=10; sys_platform == "darwin"
