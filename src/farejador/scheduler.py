@@ -1,4 +1,4 @@
-"""O agendador: uma rodada = buscar todas as fontes ativas, salvar e avisar do que é novo."""
+"""The scheduler: one round = fetch every active source, save, notify about what is new."""
 
 import asyncio
 import logging
@@ -29,7 +29,7 @@ def run_once() -> None:
         return
 
     max_total_price = get_setting("max_total_price")
-    # Banco vazio = primeira rodada: tudo é "novo"; não dispara dezenas de notificações.
+    # Empty database = first run: everything is "new"; do not fire dozens of notifications.
     first_run = count_listings() == 0
     if first_run:
         log.info("first run: saving listings silently")
@@ -49,7 +49,7 @@ def run_once() -> None:
             new_found += 1
             log.info("NEW: %sq %sm² R$%s — %s", lst["bedrooms"], lst["area"], f"{lst['price']:,}", lst["url"])
         else:
-            save_listing(lst)  # só atualiza last_seen_at
+            save_listing(lst)  # only refreshes last_seen_at
 
     scraped_ids = {lst["id"] for lst in listings}
     for tid in get_tracked_ids():
@@ -66,8 +66,8 @@ def run_once() -> None:
 
 
 def run_forever() -> None:
-    """Repete a cada N segundos; N é relido do banco a cada tique, então mudar
-    no painel vale sem reiniciar."""
+    """Re-run every N seconds; N is re-read from the database on each tick, so a
+    change made in the dashboard applies without a restart."""
     last_run = time.time()
     while True:
         time.sleep(1)
@@ -77,7 +77,7 @@ def run_forever() -> None:
 
 
 def main() -> None:
-    """Modo headless: só o robô, no terminal (`farejador --headless`)."""
+    """Headless mode: only the scraper, in the terminal (`farejador --headless`)."""
     init_db()
     run_once()
     run_forever()

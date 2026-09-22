@@ -1,5 +1,5 @@
-# Lint + testes em todo PR e em cada push na main.
-# Os nomes dos jobs ("lint", "test (…)") são os checks exigidos pelo ruleset da main.
+# Lint + tests on every PR and on every push to main.
+# The job names ("lint", "test (…)") are the status checks required by the main ruleset.
 name: CI
 
 on:
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install ruff==0.6.9   # mesma versão do .pre-commit-config.yaml
+      - run: pip install ruff==0.6.9   # same version as .pre-commit-config.yaml
       - run: ruff check .
       - run: ruff format --check .
 

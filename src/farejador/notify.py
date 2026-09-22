@@ -1,7 +1,7 @@
-"""Notificação do sistema e o alerts.log.
+"""System notifications and the alerts.log.
 
-macOS dentro do .app: UNUserNotificationCenter (pede permissão na primeira abertura).
-macOS do código-fonte: osascript. Windows/Linux: plyer.
+macOS inside the .app: UNUserNotificationCenter (asks for permission on first launch).
+macOS from source: osascript. Windows/Linux: plyer.
 """
 
 import logging

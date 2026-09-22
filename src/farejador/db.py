@@ -1,4 +1,4 @@
-"""Persistência em SQLite: anúncios, fontes (URLs de busca) e configurações."""
+"""SQLite persistence: listings, sources (search URLs) and settings."""
 
 import sqlite3
 from datetime import datetime

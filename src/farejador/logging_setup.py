@@ -1,4 +1,4 @@
-"""Configuração única de logging: terminal no modo de desenvolvimento, app.log no app empacotado."""
+"""Single logging configuration: the terminal in development, app.log in the packaged app."""
 
 import logging
 import sys
@@ -10,8 +10,8 @@ DATEFMT = "%Y-%m-%d %H:%M:%S"
 
 
 def setup_logging(log_file: Optional[Path] = None, level: int = logging.INFO) -> None:
-    """Chame uma vez no ponto de entrada. Com `log_file`, tudo (inclusive
-    stdout/stderr de bibliotecas que só fazem print) vai para o arquivo."""
+    """Call once from the entry point. With `log_file`, everything (including the
+    stdout/stderr of libraries that only print) goes to the file."""
     root = logging.getLogger()
     root.handlers.clear()
     root.setLevel(level)
@@ -20,8 +20,8 @@ def setup_logging(log_file: Optional[Path] = None, level: int = logging.INFO) ->
     else:
         log_file.parent.mkdir(parents=True, exist_ok=True)
         handler = logging.FileHandler(log_file, encoding="utf-8")
-        stream = open(log_file, "a", buffering=1, encoding="utf-8")  # noqa: SIM115 (vive até o processo acabar)
+        stream = open(log_file, "a", buffering=1, encoding="utf-8")  # noqa: SIM115 (lives as long as the process)
         sys.stdout = sys.stderr = stream
     handler.setFormatter(logging.Formatter(FORMAT, DATEFMT))
     root.addHandler(handler)
-    logging.getLogger("werkzeug").setLevel(logging.WARNING)  # o Flask loga cada request em INFO
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)  # Flask logs every request at INFO

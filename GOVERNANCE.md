@@ -39,7 +39,7 @@ Mudou o ruleset no GitHub sem passar pelo JSON? Rode `scripts/setup-github.sh` �
 
 ## Releases
 
-Só o mantenedor cria tags e publica releases. O processo — versão, changelog, tag, instaladores gerados pelo CI — está em [docs/lancamentos.md](docs/lancamentos.md).
+Só o mantenedor cria tags e publica releases. O processo — versão, changelog, tag, instaladores gerados pelo CI — está em [docs/releasing.md](docs/releasing.md).
 
 ## Mudanças nesta governança
 

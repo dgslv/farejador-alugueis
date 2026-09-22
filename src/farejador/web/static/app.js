@@ -1,5 +1,5 @@
-// Farejador de Aluguéis — aba Apartamentos.
-// `freshListings` é definido pela página (index.html) antes deste arquivo carregar.
+// Farejador de Aluguéis — Apartamentos tab.
+// `freshListings` is defined by the page (index.html) before this file loads.
 
 // ---- Lightbox ----
 let lbImgs = [], lbIdx = 0;

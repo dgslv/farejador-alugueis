@@ -1,4 +1,4 @@
-"""web/ — helpers puros, templates e rotas Flask (client de teste, sem navegador)."""
+"""web/ — pure helpers, templates and Flask routes (test client, no browser)."""
 
 import pytest
 
@@ -10,7 +10,7 @@ from tests.data import LISTING, SEARCH_URL
 
 @pytest.fixture(autouse=True)
 def _tables(db):
-    """Toda rota assume o banco criado (fixture `db` do conftest)."""
+    """Every route assumes the database exists (`db` fixture from conftest)."""
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def client():
     return app.test_client()
 
 
-# ── Helpers puros ────────────────────────────────────────────────────────────
+# ── Pure helpers ─────────────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,7 @@ def client():
         (None, "—"),
         ("", "—"),
         ("+16 fotos\nApartamento para alugar com 70 m²", "Apartamento para alugar com 70 m²"),
-        ("  \n\n3 fotos\n", "—"),  # só linhas vazias e contador de fotos
+        ("  \n\n3 fotos\n", "—"),  # only blank lines and the photo counter
         ("x" * 150, "x" * 100 + "…"),
     ],
 )
@@ -50,7 +50,7 @@ def test_format_seen_at(raw, expected):
     assert format_seen_at(raw) == expected
 
 
-# ── Aba Apartamentos ─────────────────────────────────────────────────────────
+# ── Apartamentos tab ─────────────────────────────────────────────────────────
 
 
 def test_index_renders_with_empty_db(client):
@@ -66,7 +66,7 @@ def test_index_lists_saved_listing_with_thumbnail_and_badge(client):
     html = client.get("/").get_data(as_text=True)
     assert "Rua Pinheiro Guimarães" in html
     assert 'class="thumb"' in html and "2 foto(s)" in html
-    assert 'class="fresh-badge">novo' in html  # acabou de ser encontrado e não foi visto
+    assert 'class="fresh-badge">novo' in html  # just found and not checked yet
     assert "R$ 6.406/mês" in html  # 4500 + 1566 + 340
 
 
@@ -105,7 +105,7 @@ def test_fragment_returns_rows_and_stats(client):
     assert data["fresh"][0]["id"] == LISTING["id"]
 
 
-# ── Aba Fontes ───────────────────────────────────────────────────────────────
+# ── Fontes tab ───────────────────────────────────────────────────────────────
 
 
 def test_sources_page_add_and_delete(client):
@@ -149,7 +149,7 @@ def test_settings_save_ignores_garbage_and_keeps_current(client):
     assert db.get_settings() == {"max_total_price": db.MAX_TOTAL_PRICE, "interval_seconds": 600}
 
 
-# ── Arquivos estáticos (dados do pacote) ─────────────────────────────────────
+# ── Static files (package data) ──────────────────────────────────────────────
 
 
 @pytest.mark.parametrize(
@@ -157,7 +157,7 @@ def test_settings_save_ignores_garbage_and_keeps_current(client):
     [
         ("/static/logo.png", {"image/png"}, b"\x89PNG\r\n\x1a\n"),
         ("/static/style.css", {"text/css"}, b"/* Farejador"),
-        # O tipo vem da tabela MIME do sistema: no Windows .js é application/javascript.
+        # The type comes from the OS MIME table: on Windows .js is application/javascript.
         ("/static/app.js", {"text/javascript", "application/javascript"}, b"// Farejador"),
     ],
 )

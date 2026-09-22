@@ -39,7 +39,7 @@ Para não misturar com os seus dados de uso real, aponte a pasta de dados para o
 FAREJADOR_DATA_DIR=/tmp/farejador-dev FAREJADOR_PORT=8090 farejador
 ```
 
-Como cada peça se encaixa: [docs/como-funciona.md](docs/como-funciona.md).
+Como cada peça se encaixa: [docs/how-it-works.md](docs/how-it-works.md).
 
 ## Testes
 

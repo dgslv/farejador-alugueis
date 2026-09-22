@@ -6,13 +6,13 @@ body:
     attributes:
       value: |
         Obrigado por relatar! Antes de abrir, dê uma olhada em
-        [Solução de problemas](https://github.com/dgslv/farejador-alugueis/blob/main/docs/solucao-de-problemas.md)
+        [Solução de problemas](https://github.com/dgslv/farejador-alugueis/blob/main/docs/troubleshooting.md)
         — as causas mais comuns estão lá.
   - type: input
     id: version
     attributes:
       label: Versão do Farejador
-      description: Está no nome do arquivo baixado (ex. `Farejador-2.0.0-…`) ou em `version.py`.
+      description: Está no nome do arquivo baixado (ex. `Farejador-2.0.0-…`) ou na saída de `farejador --version`.
       placeholder: "2.0.0"
     validations:
       required: true

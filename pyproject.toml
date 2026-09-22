@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "farejador"
-description = "Vigia buscas de aluguel no VivaReal e avisa quando aparece apartamento novo dentro do seu orçamento."
+description = "Watches VivaReal rental searches and notifies you when a new apartment fits your budget. Desktop app for macOS and Windows."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Diego Silva" }]
@@ -32,13 +32,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Empacotamento do app desktop (.app / .exe)
+# Desktop app packaging (.app / .exe)
 desktop = [
   "pyinstaller>=6.0",
   "pillow>=10.0",
   "pyobjc-framework-UserNotifications>=10; sys_platform == 'darwin'",
 ]
-# Desenvolvimento: testes, lint, hooks
+# Development: tests, lint, hooks
 dev = [
   "pytest>=8.0",
   "ruff>=0.5",
@@ -69,8 +69,8 @@ src = ["src", "tests"]
 extend-exclude = ["build", "dist"]
 
 [tool.ruff.lint]
-# E/W: estilo (pycodestyle) · F: erros (pyflakes) · I: ordem dos imports
-# B: bugs prováveis (bugbear) · UP: sintaxe moderna (pyupgrade)
+# E/W: style (pycodestyle) · F: errors (pyflakes) · I: import order
+# B: likely bugs (bugbear) · UP: modern syntax (pyupgrade)
 select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.pytest.ini_options]

@@ -1,4 +1,4 @@
-"""paths.py — pasta de dados por sistema, migração da pasta antiga "Aluguel" e override por env."""
+"""paths.py — per-OS data dir, migration of the old "Aluguel" folder and the env override."""
 
 import pytest
 
@@ -7,7 +7,7 @@ from farejador import paths
 
 @pytest.fixture
 def mac_home(tmp_path, monkeypatch):
-    """Finge um macOS cuja home é tmp_path, sem override. Devolve a pasta Application Support."""
+    """Pretend to be macOS with tmp_path as home and no override. Returns the Application Support dir."""
     monkeypatch.delenv("FAREJADOR_DATA_DIR", raising=False)
     monkeypatch.setattr(paths.sys, "platform", "darwin")
     monkeypatch.setattr(paths.Path, "home", lambda: tmp_path)
@@ -44,7 +44,7 @@ def test_falls_back_to_fresh_dir_when_rename_fails(mac_home, monkeypatch):
 
     monkeypatch.setattr(paths.Path, "rename", refuse)
     assert paths.data_dir().is_dir()
-    assert (mac_home / "Aluguel").is_dir()  # a pasta antiga fica intacta
+    assert (mac_home / "Aluguel").is_dir()  # the old folder is left untouched
 
 
 def test_windows_uses_appdata(tmp_path, monkeypatch):
@@ -76,7 +76,7 @@ def test_all_files_live_inside_the_data_dir(data_dir):
 
 
 def test_importing_the_package_does_no_io(tmp_path, monkeypatch):
-    """Importar config/paths não pode criar pasta nenhuma (efeito colateral em import)."""
+    """Importing config/paths must not create any folder (side effect on import)."""
     import importlib
 
     monkeypatch.setenv("FAREJADOR_DATA_DIR", str(tmp_path / "nunca-criada"))

@@ -1,7 +1,7 @@
-"""Onde o app guarda dados: banco, logs e o Chromium do Playwright.
+"""Where the app keeps its data: database, logs and Playwright's Chromium.
 
-Tudo é calculado na hora da chamada (nada acontece ao importar), para que
-testes e instalações portáteis possam apontar a pasta por FAREJADOR_DATA_DIR.
+Everything is computed at call time (nothing happens on import), so tests and
+portable installs can point the folder elsewhere with FAREJADOR_DATA_DIR.
 """
 
 import os
@@ -14,11 +14,11 @@ _LEGACY_NAMES = {"darwin": "Aluguel", "win32": "Aluguel", "linux": ".aluguel"}
 
 
 def data_dir() -> Path:
-    """Pasta de dados do usuário, criada se não existir.
+    """The user's data folder, created if missing.
 
-    Até a v1.1.0 ela se chamava "Aluguel". Se a pasta antiga existir e a nova
-    não, ela é renomeada para preservar o banco e o histórico do usuário.
-    FAREJADOR_DATA_DIR sobrepõe tudo isso.
+    Up to v1.1.0 it was called "Aluguel". If the old folder exists and the new
+    one does not, it is renamed so the database and history survive.
+    FAREJADOR_DATA_DIR overrides all of this.
     """
     override = os.environ.get("FAREJADOR_DATA_DIR")
     if override:
@@ -38,7 +38,7 @@ def data_dir() -> Path:
         try:
             legacy.rename(d)
         except OSError:
-            pass  # sem permissão para mover: começa uma pasta nova; a antiga fica intacta
+            pass  # no permission to move: start a fresh folder, leave the old one untouched
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -52,11 +52,11 @@ def alerts_log_path() -> Path:
 
 
 def app_log_path() -> Path:
-    """stdout/stderr do app empacotado, que não tem terminal."""
+    """stdout/stderr of the packaged app, which has no terminal."""
     return data_dir() / "app.log"
 
 
 def browsers_path() -> Path:
-    """Onde o Playwright instala o Chromium. Dentro do .app o padrão seria uma
-    pasta somente leitura do bundle, então o caminho é forçado para a pasta de dados."""
+    """Where Playwright installs Chromium. Inside the .app the default would be a
+    read-only folder in the bundle, so the path is forced into the data dir."""
     return data_dir() / "ms-playwright"

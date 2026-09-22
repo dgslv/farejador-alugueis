@@ -25,7 +25,7 @@ farejador            # desktop app; `--headless` = scraper only; `--dashboard` =
 pytest && ruff check . && ruff format --check .
 ```
 
-Architecture: [docs/como-funciona.md](docs/como-funciona.md) (Portuguese, but the diagram and tables translate easily).
+Architecture: [docs/how-it-works.md](docs/how-it-works.md) (Portuguese, but the diagram and tables translate easily).
 
 ## Contributing and governance
 
