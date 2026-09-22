@@ -213,7 +213,15 @@ async def fetch_listings(urls: list = None) -> list:
                 url = start_url
                 for page_num in range(1, MAX_PAGES + 1):
                     print(f"  [scraper] page {page_num}: {url[:100]}")
-                    await page.goto(url, wait_until="networkidle", timeout=60_000)
+                    # VivaReal never reaches "networkidle" (ads/trackers keep polling),
+                    # so wait for the DOM and then for the listing cards themselves.
+                    try:
+                        await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+                        await page.locator('li[data-cy="rp-property-cd"]').first.wait_for(timeout=30_000)
+                    except Exception as exc:
+                        # Keep what earlier pages gave us instead of failing the whole run.
+                        print(f"  [scraper] page {page_num} failed, stopping pagination: {str(exc).splitlines()[0][:120]}")
+                        break
                     await asyncio.sleep(random.uniform(1.5, 3))
 
                     page_listings = await _extract_listings(page)
