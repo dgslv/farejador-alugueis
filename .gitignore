@@ -1,12 +1,29 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 .venv/
 venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Dados e logs locais (o app grava na pasta de dados do usuário; estes são de execuções a partir do código)
 *.db
 *.log
+backend/listings.db
+
+# Build / empacotamento
 dist/
 build/
 *.spec.bak
+
+# Sistema / editor
 .DS_Store
-backend/listings.db
+.idea/
+.vscode/
+
+# Claude Code (worktrees e estado local da sessão)
+.claude/worktrees/
+.claude/.cc-writes/
+.claude/settings.local.json

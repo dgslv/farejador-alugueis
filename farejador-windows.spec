@@ -1,16 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for macOS (.app bundle)
+# PyInstaller spec for Windows (single-file .exe). Build with: scripts\build-windows.bat
 
-import sys
+import os
+
 from PyInstaller.utils.hooks import collect_all
 
-# Collect playwright Python package files
+# Single source of truth for the version (see version.py).
+_ns = {}
+with open(os.path.join(SPECPATH, "version.py"), encoding="utf-8") as _f:  # SPECPATH is injected by PyInstaller
+    exec(_f.read(), _ns)
+VERSION = _ns["__version__"]
+
 playwright_datas, playwright_binaries, playwright_hiddenimports = collect_all("playwright")
-
-# Collect pywebview
 webview_datas, webview_binaries, webview_hiddenimports = collect_all("webview")
-
-# Collect playwright-stealth (ships a js/ folder with the evasion scripts)
+# playwright-stealth ships a js/ folder with the evasion scripts
 stealth_datas, stealth_binaries, stealth_hiddenimports = collect_all("playwright_stealth")
 
 a = Analysis(
@@ -24,9 +27,8 @@ a = Analysis(
         + stealth_hiddenimports
         + [
             "plyer",
-            "plyer.platforms.macosx.notification",
+            "plyer.platforms.win.notification",
             "flask",
-            "schedule",
             "sqlite3",
             "json",
         ]
@@ -43,34 +45,17 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
-    name="Aluguel",
+    name="Farejador",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # no terminal window
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
     upx_exclude=[],
-    name="Aluguel",
-)
-
-app = BUNDLE(
-    coll,
-    name="Aluguel.app",
-    icon=None,  # replace with "icon.icns" if you have one
-    bundle_identifier="com.aluguel.app",
-    info_plist={
-        "NSHighResolutionCapable": True,
-        "LSMinimumSystemVersion": "11.0",
-        "CFBundleShortVersionString": "1.0.0",
-    },
+    runtime_tmpdir=None,
+    console=False,  # no terminal window
+    disable_windowed_traceback=False,
+    icon=None,  # replace with "packaging/icon.ico" once there is an icon
 )
