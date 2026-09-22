@@ -1,8 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for macOS (.app bundle)
+# PyInstaller spec for macOS (.app bundle). Build with: scripts/build-macos.sh
 
-import sys
+import os
+
 from PyInstaller.utils.hooks import collect_all
+
+# Single source of truth for the version (see version.py).
+_ns = {}
+with open(os.path.join(SPECPATH, "version.py"), encoding="utf-8") as _f:  # SPECPATH is injected by PyInstaller
+    exec(_f.read(), _ns)
+VERSION = _ns["__version__"]
 
 # Collect playwright Python package files
 playwright_datas, playwright_binaries, playwright_hiddenimports = collect_all("playwright")
@@ -30,7 +37,6 @@ a = Analysis(
             "plyer",
             "plyer.platforms.macosx.notification",
             "flask",
-            "schedule",
             "sqlite3",
             "json",
         ]
@@ -49,7 +55,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="Aluguel",
+    name="Farejador",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -64,17 +70,20 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="Aluguel",
+    name="Farejador",
 )
 
 app = BUNDLE(
     coll,
-    name="Aluguel.app",
-    icon=None,  # replace with "icon.icns" if you have one
-    bundle_identifier="com.aluguel.app",
+    name="Farejador.app",
+    icon=None,  # replace with "packaging/icon.icns" once there is an icon
+    bundle_identifier="io.github.dgslv.farejador",
     info_plist={
+        "CFBundleName": "Farejador",
+        "CFBundleDisplayName": "Farejador de Aluguéis",
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "11.0",
-        "CFBundleShortVersionString": "1.0.0",
     },
 )

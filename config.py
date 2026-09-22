@@ -2,14 +2,39 @@ import os
 import sys
 from pathlib import Path
 
+APP_NAME = "Farejador"  # binários, pasta de dados, notificações
+APP_DISPLAY_NAME = "Farejador de Aluguéis"  # janela e títulos
+
 
 def _app_data_dir() -> Path:
+    """Pasta de dados do usuário (banco, logs, Chromium).
+
+    Até a v1.1.0 ela se chamava "Aluguel". Se a pasta antiga existir e a nova
+    não, ela é renomeada para preservar o banco e o histórico do usuário.
+
+    FAREJADOR_DATA_DIR sobrepõe tudo isso (instalações portáteis e testes).
+    """
+    override = os.environ.get("FAREJADOR_DATA_DIR")
+    if override:
+        d = Path(override)
+        d.mkdir(parents=True, exist_ok=True)
+        return d
     if sys.platform == "darwin":
-        d = Path.home() / "Library" / "Application Support" / "Aluguel"
+        base = Path.home() / "Library" / "Application Support"
+        name, legacy = APP_NAME, "Aluguel"
     elif sys.platform == "win32":
-        d = Path(os.environ.get("APPDATA", str(Path.home()))) / "Aluguel"
+        base = Path(os.environ.get("APPDATA", str(Path.home())))
+        name, legacy = APP_NAME, "Aluguel"
     else:
-        d = Path.home() / ".aluguel"
+        base = Path.home()
+        name, legacy = ".farejador", ".aluguel"
+    d = base / name
+    old = base / legacy
+    if old.is_dir() and not d.exists():
+        try:
+            old.rename(d)
+        except OSError:
+            pass  # sem permissão para mover: começa uma pasta nova; a antiga fica intacta
     d.mkdir(parents=True, exist_ok=True)
     return d
 

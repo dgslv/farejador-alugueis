@@ -1,0 +1,141 @@
+# Gera os instaladores e publica a Release quando uma tag vX.Y.Z é enviada.
+# Processo completo em docs/lancamentos.md.
+#
+# Também roda — só a parte de gerar os instaladores, sem publicar — em PRs
+# que mexem em empacotamento e ao disparar manualmente (Actions → Release →
+# Run workflow). Os instaladores ficam como artefatos do workflow.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "*.spec"
+      - "app.py"
+      - "version.py"
+      - "requirements*.txt"
+      - "scripts/build-*"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-version:
+    name: tag == version.py
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: echo "version=$(python3 -c 'from version import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
+      - if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ "$GITHUB_REF_NAME" != "v${{ steps.v.outputs.version }}" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com version.py (v${{ steps.v.outputs.version }})."
+            exit 1
+          fi
+
+  build-macos:
+    name: macOS (${{ matrix.arch }})
+    needs: check-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-latest, arch: arm64 }      # Apple Silicon
+          - { runner: macos-15-intel, arch: x86_64 }   # Intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: scripts/build-macos.sh
+      - name: Smoke test — o .app sobe o painel sem erro de import
+        run: |
+          set -e
+          export FAREJADOR_DATA_DIR="$PWD/smoke-data"
+          dist/Farejador.app/Contents/MacOS/Farejador &
+          APP_PID=$!
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8080/sources > page.html && break
+            sleep 2
+          done
+          grep -q 'name="interval_seconds"' page.html || { echo "::error::formulário de configurações ausente"; head -50 page.html; exit 1; }
+          sleep 5
+          echo "--- app.log ---"; cat smoke-data/app.log
+          if grep -qE "Traceback|ModuleNotFoundError" smoke-data/app.log; then echo "::error::erros no app.log"; exit 1; fi
+          kill $APP_PID || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Farejador-macOS-${{ matrix.arch }}
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Windows (x64)
+    needs: check-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: scripts\build-windows.bat
+        shell: cmd
+      - name: Smoke test — o .exe sobe o painel sem erro de import
+        shell: pwsh
+        run: |
+          $env:FAREJADOR_DATA_DIR = "$PWD\smoke-data"
+          $exe = (Get-ChildItem dist\Farejador-*-Windows-x64.exe | Select-Object -First 1).FullName
+          $p = Start-Process -FilePath $exe -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8080/sources -TimeoutSec 5
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch {}
+            Start-Sleep -Seconds 2
+          }
+          if (-not $ok) { Write-Error "o painel não subiu"; exit 1 }
+          if ($r.Content -notmatch 'name="interval_seconds"') { Write-Error "formulário de configurações ausente"; exit 1 }
+          Start-Sleep -Seconds 5
+          Write-Host "--- app.log ---"; Get-Content smoke-data\app.log
+          if (Select-String -Path smoke-data\app.log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "erros no app.log"; exit 1 }
+          Stop-Process -Id $p.Id -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Farejador-Windows-x64
+          path: dist/Farejador-*-Windows-x64.exe
+          if-no-files-found: error
+
+  release:
+    name: publicar Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check-version, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Notas a partir do CHANGELOG
+        run: python3 scripts/changelog_section.py "${{ needs.check-version.outputs.version }}" > notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Farejador ${{ needs.check-version.outputs.version }}
+          body_path: notes.md
+          generate_release_notes: true
+          files: artifacts/*

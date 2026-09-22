@@ -1,5 +1,7 @@
+# Dependências de execução (scraper, dashboard e app desktop).
+# Empacotamento: requirements-desktop.txt · Desenvolvimento: requirements-dev.txt
 playwright>=1.44
-schedule>=1.2
-flask>=3.0
-rumps>=0.4
 playwright-stealth>=2.0
+flask>=3.0
+plyer>=2.1
+pywebview>=5.0

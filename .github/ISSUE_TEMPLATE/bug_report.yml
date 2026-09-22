@@ -1,0 +1,59 @@
+name: 🐛 Relatar um problema
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! Antes de abrir, dê uma olhada em
+        [Solução de problemas](https://github.com/dgslv/farejador-alugueis/blob/main/docs/solucao-de-problemas.md)
+        — as causas mais comuns estão lá.
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Farejador
+      description: Está no nome do arquivo baixado (ex. `Farejador-2.0.0-…`) ou em `version.py`.
+      placeholder: "2.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema
+      options:
+        - macOS (Apple Silicon — chip M1/M2/M3/M4)
+        - macOS (Intel)
+        - Windows 11
+        - Windows 10
+        - Linux (rodando do código-fonte)
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: Como você roda o app?
+      options:
+        - Baixei o .dmg / .exe da página de Releases
+        - Rodo do código-fonte (python app.py / main.py)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu?
+      description: O que você fez, o que esperava que acontecesse e o que aconteceu de fato.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Trecho do app.log
+      description: |
+        macOS: `~/Library/Application Support/Farejador/app.log` · Windows: `%APPDATA%\Farejador\app.log`.
+        Cole as últimas ~50 linhas. **Apague qualquer informação pessoal antes.**
+      render: text
+  - type: input
+    id: source
+    attributes:
+      label: URL da fonte (opcional)
+      description: A URL de busca do VivaReal cadastrada na aba Fontes, se o problema for com ela.

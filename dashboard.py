@@ -2,8 +2,22 @@ import html as _html
 import json
 import re
 from datetime import datetime, timedelta
-from flask import Flask, redirect, url_for, request
-from storage import get_all_listings, mark_checked, toggle_tracked, init_db, get_sources, add_source, delete_source, toggle_source, get_settings, set_setting, get_setting
+
+from flask import Flask, redirect, request, url_for
+
+from storage import (
+    add_source,
+    delete_source,
+    get_all_listings,
+    get_setting,
+    get_settings,
+    get_sources,
+    init_db,
+    mark_checked,
+    set_setting,
+    toggle_source,
+    toggle_tracked,
+)
 
 app = Flask(__name__)
 
@@ -14,7 +28,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<title>Aluguel Dashboard</title>
+<title>Farejador de Aluguéis</title>
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
   h1 {{ margin-bottom: 4px; }}
@@ -441,7 +455,7 @@ def _build_content():
     """Return (rows_html, fresh_listings_data, stats_dict) from current DB state."""
     listings = get_all_listings()
     total = len(listings)
-    checked_count = sum(1 for l in listings if l.get("checked"))
+    checked_count = sum(1 for lst in listings if lst.get("checked"))
     new_count = total - checked_count
 
     cutoff_dt = datetime.now() - timedelta(hours=NEW_THRESHOLD_HOURS)
@@ -453,11 +467,11 @@ def _build_content():
 
     fresh_listings_data = []
     rows_html = []
-    for l in listings:
-        is_checked = bool(l.get("checked"))
-        is_tracked = bool(l.get("tracked"))
-        seen_at_str = l.get("seen_at") or ""
-        last_seen_at = l.get("last_seen_at")
+    for lst in listings:
+        is_checked = bool(lst.get("checked"))
+        is_tracked = bool(lst.get("tracked"))
+        seen_at_str = lst.get("seen_at") or ""
+        last_seen_at = lst.get("last_seen_at")
         is_gone = is_tracked and bool(last_seen_at) and last_seen_at < gone_cutoff_iso
         is_fresh = not is_checked and seen_at_str >= cutoff_iso
 
@@ -474,43 +488,43 @@ def _build_content():
         action_label = "Já visto" if is_checked else "✓ Marcar como visto"
         track_label = "★ Monitorando" if is_tracked else "⭐ Monitorar"
         track_btn_class = "tracking" if is_tracked else ""
-        bedrooms = l.get("bedrooms") or "—"
-        area = f"{l['area']} m²" if l.get("area") else "—"
-        price_val = l.get("price") or 0
-        condo_val = l.get("condo") or 0
-        iptu_val = l.get("iptu") or 0
+        bedrooms = lst.get("bedrooms") or "—"
+        area = f"{lst['area']} m²" if lst.get("area") else "—"
+        price_val = lst.get("price") or 0
+        condo_val = lst.get("condo") or 0
+        iptu_val = lst.get("iptu") or 0
         price = f"R$ {price_val:,}/mês".replace(",", ".") if price_val else "—"
         total_val = price_val + condo_val + iptu_val
         total_str = f"R$ {total_val:,}/mês".replace(",", ".") if total_val else "—"
 
         try:
-            images_list = json.loads(l.get("images") or "[]") or []
+            images_list = json.loads(lst.get("images") or "[]") or []
         except Exception:
             images_list = []
         modal_data = {
-            "id":           l["id"],
-            "url":          l.get("url", "#"),
-            "title":        clean_title(l.get("title")),
-            "street":       l.get("street") or "",
-            "neighborhood": l.get("neighborhood") or "",
+            "id":           lst["id"],
+            "url":          lst.get("url", "#"),
+            "title":        clean_title(lst.get("title")),
+            "street":       lst.get("street") or "",
+            "neighborhood": lst.get("neighborhood") or "",
             "price":        price_val,
             "condo":        condo_val,
             "iptu":         iptu_val,
-            "area":         l.get("area") or 0,
-            "bedrooms":     l.get("bedrooms") or 0,
-            "posted_at":    l.get("posted_at") or "",
+            "area":         lst.get("area") or 0,
+            "bedrooms":     lst.get("bedrooms") or 0,
+            "posted_at":    lst.get("posted_at") or "",
             "images":       images_list,
         }
         if not is_checked:
             fresh_listings_data.append({
-                "id":           l["id"],
+                "id":           lst["id"],
                 "title":        modal_data["title"],
                 "neighborhood": modal_data["neighborhood"],
                 "price":        price_val,
             })
         listing_data = _html.escape(json.dumps(modal_data, ensure_ascii=False), quote=True)
 
-        title_cell = clean_title(l.get("title"))
+        title_cell = clean_title(lst.get("title"))
         if is_fresh and not is_gone:
             title_cell += ' <span class="fresh-badge">novo</span>'
         if is_gone:
@@ -519,19 +533,19 @@ def _build_content():
         rows_html.append(ROW_TEMPLATE.format(
             css_class=css_class,
             title=title_cell,
-            street=l.get("street") or "—",
-            neighborhood=l.get("neighborhood") or "—",
-            seen_at=format_seen_at(l.get("seen_at")),
+            street=lst.get("street") or "—",
+            neighborhood=lst.get("neighborhood") or "—",
+            seen_at=format_seen_at(lst.get("seen_at")),
             bedrooms=bedrooms,
             area=area,
             price=price,
             total=total_str,
-            url=l.get("url", "#"),
-            listing_id=l["id"],
+            url=lst.get("url", "#"),
+            listing_id=lst["id"],
             action_label=action_label,
             track_label=track_label,
             track_btn_class=track_btn_class,
-            thumb_html=build_thumb_html(l.get("images")),
+            thumb_html=build_thumb_html(lst.get("images")),
             listing_data=listing_data,
         ))
 
@@ -589,7 +603,7 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<title>Fontes — Aluguel</title>
+<title>Fontes — Farejador de Aluguéis</title>
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
   h1 {{ margin-bottom: 4px; }}
@@ -723,7 +737,7 @@ def sources():
 @app.route("/notify-test", methods=["POST"])
 def notify_test():
     from notifier import notify
-    notify("Aluguel", "Notificações funcionando! Você será avisado de novos apartamentos.")
+    notify("Farejador", "Notificações funcionando! Você será avisado de novos apartamentos.")
     return redirect(url_for("sources"))
 
 

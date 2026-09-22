@@ -1,0 +1,19 @@
+name: ✨ Sugerir uma funcionalidade
+description: Uma ideia para o Farejador ficar melhor
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Que problema isso resolve?
+      description: "Conte a situação: \"quando eu …, queria que …\"."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Como você imagina a solução?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas que você considerou (opcional)

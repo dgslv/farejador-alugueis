@@ -1,0 +1,6 @@
+# Normaliza quebras de linha entre macOS, Windows e Linux.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.icns binary
+*.ico binary

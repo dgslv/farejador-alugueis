@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime
-from config import LOG_PATH
+
+from config import APP_NAME, LOG_PATH
 
 
 def _is_mac_bundle() -> bool:
@@ -15,9 +16,9 @@ def request_permission():
         return
     try:
         from UserNotifications import (
-            UNUserNotificationCenter,
             UNAuthorizationOptionAlert,
             UNAuthorizationOptionSound,
+            UNUserNotificationCenter,
         )
 
         def done(granted, error):
@@ -33,11 +34,12 @@ def request_permission():
 def _notify_mac_native(title: str, message: str) -> bool:
     try:
         import uuid
+
         from UserNotifications import (
-            UNUserNotificationCenter,
             UNMutableNotificationContent,
             UNNotificationRequest,
             UNNotificationSound,
+            UNUserNotificationCenter,
         )
         content = UNMutableNotificationContent.alloc().init()
         content.setTitle_(title)
@@ -46,6 +48,7 @@ def _notify_mac_native(title: str, message: str) -> bool:
         request = UNNotificationRequest.requestWithIdentifier_content_trigger_(
             str(uuid.uuid4()), content, None
         )
+
         def done(error):
             if error is not None:
                 print(f"  [notify] delivery error: {error}")
@@ -71,7 +74,7 @@ def notify(title: str, message: str):
         return
     try:
         from plyer import notification  # Windows / Linux
-        notification.notify(title=title, message=message, app_name="Aluguel", timeout=8)
+        notification.notify(title=title, message=message, app_name=APP_NAME, timeout=8)
     except Exception as exc:
         print(f"  [notify] failed: {exc}")
 

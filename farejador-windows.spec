@@ -1,7 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for Windows (.exe)
+# PyInstaller spec for Windows (single-file .exe). Build with: scripts\build-windows.bat
+
+import os
 
 from PyInstaller.utils.hooks import collect_all
+
+# Single source of truth for the version (see version.py).
+_ns = {}
+with open(os.path.join(SPECPATH, "version.py"), encoding="utf-8") as _f:  # SPECPATH is injected by PyInstaller
+    exec(_f.read(), _ns)
+VERSION = _ns["__version__"]
 
 playwright_datas, playwright_binaries, playwright_hiddenimports = collect_all("playwright")
 webview_datas, webview_binaries, webview_hiddenimports = collect_all("webview")
@@ -21,7 +29,6 @@ a = Analysis(
             "plyer",
             "plyer.platforms.win.notification",
             "flask",
-            "schedule",
             "sqlite3",
             "json",
         ]
@@ -41,14 +48,14 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="Aluguel",
+    name="Farejador",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,   # no terminal window
+    console=False,  # no terminal window
     disable_windowed_traceback=False,
-    icon=None,       # replace with "icon.ico" if you have one
+    icon=None,  # replace with "packaging/icon.ico" once there is an icon
 )
