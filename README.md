@@ -6,11 +6,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dgslv/farejador-alugueis/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/dgslv/farejador-alugueis?label=download&color=2e7d32"></a>
-  <a href="https://github.com/dgslv/farejador-alugueis/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/dgslv/farejador-alugueis/ci.yml?branch=main&label=CI"></a>
-  <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/github/license/dgslv/farejador-alugueis"></a>
+  <a href="https://github.com/dgslv/farejador-alugueis/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-Releases-2e7d32"></a>
+  <a href="https://github.com/dgslv/farejador-alugueis/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/badge/CI-GitHub%20Actions-555"></a>
+  <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-blue"></a>
   <img alt="macOS e Windows" src="https://img.shields.io/badge/plataformas-macOS%20%7C%20Windows-blue">
 </p>
+<!-- Badges estáticos enquanto o repositório é privado (os dinâmicos do shields.io leem a API
+     pública do GitHub e mostram "repo not found"). Ao tornar o repo público, troque por:
+     https://img.shields.io/github/v/release/dgslv/farejador-alugueis?label=download&color=2e7d32
+     https://img.shields.io/github/actions/workflow/status/dgslv/farejador-alugueis/ci.yml?branch=main&label=CI
+     https://img.shields.io/github/license/dgslv/farejador-alugueis -->
 
 <p align="center"><a href="README.en.md">🇺🇸 English</a></p>
 
