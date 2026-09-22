@@ -6,6 +6,8 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+## [2.0.0] - 2026-09-22
+
 ### Mudado
 
 - O app agora se chama **Farejador de Aluguéis**: os instaladores são `Farejador.app` / `Farejador.exe` e a pasta de dados passa de `Aluguel` para `Farejador`. A pasta antiga é migrada automaticamente na primeira abertura — nada se perde.
@@ -69,7 +71,8 @@ Instaladores desta versão ainda se chamam `Aluguel.dmg` / `Aluguel.exe`.
 
 - Primeira versão: scraper do VivaReal com Playwright, banco SQLite, painel Flask com fotos e detalhes, notificações do sistema, e empacotamento como app desktop para macOS e Windows.
 
-[Não lançado]: https://github.com/dgslv/farejador-alugueis/compare/v1.2.0...HEAD
+[Não lançado]: https://github.com/dgslv/farejador-alugueis/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/dgslv/farejador-alugueis/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/dgslv/farejador-alugueis/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/dgslv/farejador-alugueis/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/dgslv/farejador-alugueis/releases/tag/v1.0.0
