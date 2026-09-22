@@ -31,6 +31,22 @@ jobs:
             -ov -format UDZO \
             "dist/Aluguel.dmg"
 
+      - name: Smoke test .app (dashboard up, no import errors)
+        run: |
+          set -e
+          dist/Aluguel.app/Contents/MacOS/Aluguel &
+          APP_PID=$!
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8080/sources > page.html && break
+            sleep 2
+          done
+          grep -q 'name="interval_seconds"' page.html || { echo "settings form missing"; cat page.html | head -50; exit 1; }
+          LOG="$HOME/Library/Application Support/Aluguel/app.log"
+          sleep 5
+          if grep -qE "Traceback|ModuleNotFoundError" "$LOG"; then echo "errors in app.log:"; cat "$LOG"; exit 1; fi
+          echo "--- app.log ---"; cat "$LOG"
+          kill $APP_PID || true
+
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
@@ -53,6 +69,26 @@ jobs:
 
       - name: Build .exe
         run: pyinstaller aluguel_windows.spec --clean --noconfirm
+
+      - name: Smoke test .exe (dashboard up, no import errors)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\Aluguel.exe" -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8080/sources -TimeoutSec 5
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch {}
+            Start-Sleep -Seconds 2
+          }
+          if (-not $ok) { Write-Error "dashboard never came up"; exit 1 }
+          if ($r.Content -notmatch 'name="interval_seconds"') { Write-Error "settings form missing"; exit 1 }
+          Start-Sleep -Seconds 5
+          $log = Join-Path $env:APPDATA "Aluguel\app.log"
+          Write-Host "--- app.log ---"; Get-Content $log
+          if (Select-String -Path $log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "errors in app.log"; exit 1 }
+          Stop-Process -Id $p.Id -Force
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4

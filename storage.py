@@ -101,6 +101,11 @@ def save_listing(listing: dict):
         conn.commit()
 
 
+def count_listings() -> int:
+    with _connect() as conn:
+        return conn.execute("SELECT count(*) FROM listings").fetchone()[0]
+
+
 def get_all_listings() -> list:
     with _connect() as conn:
         rows = conn.execute("SELECT * FROM listings ORDER BY checked ASC, seen_at DESC").fetchall()
