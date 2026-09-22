@@ -29,7 +29,7 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: v
         run: echo "version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/farejador/__init__.py)" >> "$GITHUB_OUTPUT"
       - if: startsWith(github.ref, 'refs/tags/')
@@ -50,8 +50,8 @@ jobs:
           - { runner: macos-15-intel, arch: x86_64 }   # Intel
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: packaging/build-macos.sh
@@ -70,7 +70,7 @@ jobs:
           echo "--- app.log ---"; cat smoke-data/app.log
           if grep -qE "Traceback|ModuleNotFoundError" smoke-data/app.log; then echo "::error::errors in app.log"; exit 1; fi
           kill $APP_PID || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Farejador-macOS-${{ matrix.arch }}
           path: dist/*.dmg
@@ -81,8 +81,8 @@ jobs:
     needs: check-version
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: packaging\build-windows.bat
@@ -107,7 +107,7 @@ jobs:
           Write-Host "--- app.log ---"; Get-Content smoke-data\app.log
           if (Select-String -Path smoke-data\app.log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "errors in app.log"; exit 1 }
           Stop-Process -Id $p.Id -Force
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Farejador-Windows-x64
           path: dist/Farejador-*-Windows-x64.exe
@@ -121,8 +121,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -133,7 +133,7 @@ jobs:
           cat SHA256SUMS.txt
       - name: Release notes from CHANGELOG
         run: python3 scripts/changelog_section.py "${{ needs.check-version.outputs.version }}" > notes.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: Farejador ${{ needs.check-version.outputs.version }}
           body_path: notes.md
