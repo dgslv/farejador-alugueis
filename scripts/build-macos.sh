@@ -27,11 +27,24 @@ else
 fi
 
 echo "==> Criando ${DMG}..."
-hdiutil create \
-  -volname "Farejador" \
-  -srcfolder "dist/Farejador.app" \
-  -ov -format UDZO \
-  "$DMG"
+# "hdiutil: create failed - Resource busy" acontece de vez em quando (Spotlight ou
+# outro processo tocando a pasta), principalmente nos runners do GitHub. Tentar de
+# novo resolve; três tentativas com pausa.
+for attempt in 1 2 3; do
+  if hdiutil create \
+       -volname "Farejador" \
+       -srcfolder "dist/Farejador.app" \
+       -ov -format UDZO \
+       "$DMG"; then
+    break
+  fi
+  if [ "$attempt" -eq 3 ]; then
+    echo "hdiutil falhou 3 vezes" >&2
+    exit 1
+  fi
+  echo "==> hdiutil falhou (tentativa $attempt); esperando 10 s e tentando de novo..."
+  sleep 10
+done
 
 echo
 echo "Pronto: $DMG"
