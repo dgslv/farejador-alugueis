@@ -55,6 +55,21 @@ jobs:
         with:
           python-version: "3.11"
       - run: scripts/build-macos.sh
+      - name: Smoke test — o .app sobe o painel sem erro de import
+        run: |
+          set -e
+          export FAREJADOR_DATA_DIR="$PWD/smoke-data"
+          dist/Farejador.app/Contents/MacOS/Farejador &
+          APP_PID=$!
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8080/sources > page.html && break
+            sleep 2
+          done
+          grep -q 'name="interval_seconds"' page.html || { echo "::error::formulário de configurações ausente"; head -50 page.html; exit 1; }
+          sleep 5
+          echo "--- app.log ---"; cat smoke-data/app.log
+          if grep -qE "Traceback|ModuleNotFoundError" smoke-data/app.log; then echo "::error::erros no app.log"; exit 1; fi
+          kill $APP_PID || true
       - uses: actions/upload-artifact@v4
         with:
           name: Farejador-macOS-${{ matrix.arch }}
@@ -72,6 +87,26 @@ jobs:
           python-version: "3.11"
       - run: scripts\build-windows.bat
         shell: cmd
+      - name: Smoke test — o .exe sobe o painel sem erro de import
+        shell: pwsh
+        run: |
+          $env:FAREJADOR_DATA_DIR = "$PWD\smoke-data"
+          $exe = (Get-ChildItem dist\Farejador-*-Windows-x64.exe | Select-Object -First 1).FullName
+          $p = Start-Process -FilePath $exe -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8080/sources -TimeoutSec 5
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch {}
+            Start-Sleep -Seconds 2
+          }
+          if (-not $ok) { Write-Error "o painel não subiu"; exit 1 }
+          if ($r.Content -notmatch 'name="interval_seconds"') { Write-Error "formulário de configurações ausente"; exit 1 }
+          Start-Sleep -Seconds 5
+          Write-Host "--- app.log ---"; Get-Content smoke-data\app.log
+          if (Select-String -Path smoke-data\app.log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "erros no app.log"; exit 1 }
+          Stop-Process -Id $p.Id -Force
       - uses: actions/upload-artifact@v4
         with:
           name: Farejador-Windows-x64

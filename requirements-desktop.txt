@@ -2,3 +2,5 @@
 -r requirements.txt
 pyinstaller>=6.0
 pillow>=10.0
+# Notificações nativas do macOS (UNUserNotificationCenter); só funcionam dentro do .app.
+pyobjc-framework-UserNotifications>=10; sys_platform == "darwin"

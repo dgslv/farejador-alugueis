@@ -9,6 +9,7 @@ from storage import (
     add_source,
     delete_source,
     get_all_listings,
+    get_setting,
     get_settings,
     get_sources,
     init_db,
@@ -459,7 +460,10 @@ def _build_content():
 
     cutoff_dt = datetime.now() - timedelta(hours=NEW_THRESHOLD_HOURS)
     cutoff_iso = cutoff_dt.isoformat()
-    gone_cutoff_iso = (datetime.now() - timedelta(minutes=35)).isoformat()
+    # A tracked listing is "gone" after missing ~3 consecutive scrapes (floor 5 min,
+    # so a single failed page at a short interval doesn't flag it).
+    gone_after = max(3 * get_setting("interval_seconds"), 5 * 60)
+    gone_cutoff_iso = (datetime.now() - timedelta(seconds=gone_after)).isoformat()
 
     fresh_listings_data = []
     rows_html = []
@@ -685,6 +689,9 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
       <button type="submit" class="btn-add">Salvar</button>
     </div>
   </form>
+  <form method="POST" action="/notify-test" style="margin-top:12px">
+    <button type="submit" class="btn-add btn-toggle">🔔 Testar notificação</button>
+  </form>
 </div>
 </body>
 </html>"""
@@ -725,6 +732,13 @@ def sources():
         ))
     body = "\n".join(rows) if rows else '<tr><td colspan="4" class="empty">Nenhuma fonte cadastrada.</td></tr>'
     return SOURCES_TEMPLATE.format(rows=body, **get_settings())
+
+
+@app.route("/notify-test", methods=["POST"])
+def notify_test():
+    from notifier import notify
+    notify("Farejador", "Notificações funcionando! Você será avisado de novos apartamentos.")
+    return redirect(url_for("sources"))
 
 
 @app.route("/settings", methods=["POST"])

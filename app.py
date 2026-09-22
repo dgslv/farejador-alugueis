@@ -99,6 +99,8 @@ def main():
     )
 
     def on_ready():
+        from notifier import request_permission
+        request_permission()
         if not _playwright_chromium_installed():
             _install_chromium(window)
             window.load_url("http://127.0.0.1:8080")

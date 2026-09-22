@@ -18,12 +18,9 @@ dist/
 build/
 *.spec.bak
 
-# Sistema / editor
+# Sistema / editor / estado local
 .DS_Store
 .idea/
 .vscode/
-
-# Claude Code (worktrees e estado local da sessão)
-.claude/worktrees/
-.claude/.cc-writes/
-.claude/settings.local.json
+.claude/
+Archive.zip
