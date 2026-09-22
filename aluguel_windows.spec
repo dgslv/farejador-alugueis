@@ -5,15 +5,18 @@ from PyInstaller.utils.hooks import collect_all
 
 playwright_datas, playwright_binaries, playwright_hiddenimports = collect_all("playwright")
 webview_datas, webview_binaries, webview_hiddenimports = collect_all("webview")
+# playwright-stealth ships a js/ folder with the evasion scripts
+stealth_datas, stealth_binaries, stealth_hiddenimports = collect_all("playwright_stealth")
 
 a = Analysis(
     ["app.py"],
     pathex=["."],
-    binaries=playwright_binaries + webview_binaries,
-    datas=playwright_datas + webview_datas,
+    binaries=playwright_binaries + webview_binaries + stealth_binaries,
+    datas=playwright_datas + webview_datas + stealth_datas,
     hiddenimports=(
         playwright_hiddenimports
         + webview_hiddenimports
+        + stealth_hiddenimports
         + [
             "plyer",
             "plyer.platforms.win.notification",

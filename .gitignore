@@ -10,3 +10,5 @@ build/
 *.spec.bak
 .DS_Store
 backend/listings.db
+.claude/
+Archive.zip

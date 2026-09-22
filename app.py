@@ -9,30 +9,26 @@ import threading
 import time
 from pathlib import Path
 
-import schedule
 import webview
 
 # Force headless scraping when running as desktop app (no browser window pop-ups)
 import config as _cfg
 _cfg.HEADLESS = True
 
-from config import INTERVAL_MINUTES
+# Both the installer subprocess and the scraper read this env var, so they agree
+# on where Chromium lives. Must happen before playwright is imported anywhere.
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = _cfg.BROWSERS_PATH
+
 from storage import init_db
+
+_browsers_ready = threading.Event()
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _playwright_chromium_installed() -> bool:
-    """Return True if Playwright Chromium is already installed."""
-    home = Path.home()
-    if sys.platform == "darwin":
-        browsers_path = home / "Library" / "Caches" / "ms-playwright"
-    elif sys.platform == "win32":
-        local_app = os.environ.get("LOCALAPPDATA", "")
-        browsers_path = Path(local_app) / "ms-playwright"
-    else:
-        browsers_path = home / ".cache" / "ms-playwright"
-
+    """Return True if Playwright Chromium is already installed in BROWSERS_PATH."""
+    browsers_path = Path(_cfg.BROWSERS_PATH)
     if not browsers_path.exists():
         return False
     return any(p.name.startswith("chromium") for p in browsers_path.iterdir())
@@ -48,10 +44,12 @@ def _install_chromium(window: webview.Window):
     <p style="color:#999;font-size:13px;margin:0">Aguarde, pode levar alguns minutos.</p>
     </body></html>
     """)
-    subprocess.run(
-        [sys.executable, "-m", "playwright", "install", "chromium"],
-        check=False,
-    )
+    # In the frozen .app, sys.executable is Aluguel itself — running
+    # "sys.executable -m playwright" would relaunch the app in a loop.
+    # Call the bundled Playwright driver (node + cli.js) directly instead.
+    from playwright._impl._driver import compute_driver_executable
+    node, cli = compute_driver_executable()
+    subprocess.run([node, cli, "install", "chromium"], check=False)
 
 
 # ── Background services ─────────────────────────────────────────────────────────
@@ -62,17 +60,27 @@ def _start_flask():
 
 
 def _start_scheduler():
-    from main import run_once
+    _browsers_ready.wait()  # first scrape only after Chromium is installed
+    from main import run_once, run_forever
     run_once()
-    schedule.every(INTERVAL_MINUTES).minutes.do(run_once)
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+    run_forever()
 
 
 # ── Main ────────────────────────────────────────────────────────────────────────
 
+def _log_to_file():
+    """The .app has no terminal: send stdout/stderr to app.log so problems on
+    another machine can be diagnosed from the file."""
+    if not getattr(sys, "frozen", False):
+        return
+    from config import APP_LOG_PATH
+    f = open(APP_LOG_PATH, "a", buffering=1, encoding="utf-8")
+    sys.stdout = sys.stderr = f
+    print(f"\n===== Aluguel started {time.strftime('%Y-%m-%d %H:%M:%S')} =====")
+
+
 def main():
+    _log_to_file()
     init_db()
 
     threading.Thread(target=_start_flask, daemon=True).start()
@@ -90,9 +98,12 @@ def main():
     )
 
     def on_ready():
+        from notifier import request_permission
+        request_permission()
         if not _playwright_chromium_installed():
             _install_chromium(window)
             window.load_url("http://127.0.0.1:8080")
+        _browsers_ready.set()
 
     webview.start(on_ready)
 

@@ -2,12 +2,9 @@ import asyncio
 import time
 from datetime import datetime
 
-import schedule
-
 from scraper import fetch_listings
-from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources
+from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources, get_setting, count_listings
 from notifier import notify, log_listing
-from config import INTERVAL_MINUTES
 
 
 def run_once():
@@ -19,14 +16,23 @@ def run_once():
         print(f"  ERROR fetching listings: {exc}")
         return
 
+    max_total_price = get_setting("max_total_price")
+    # Empty DB = first run: everything is "new", don't fire dozens of notifications.
+    first_run = count_listings() == 0
+    if first_run:
+        print("  [notify] first run: saving listings silently")
     new_found = 0
     for lst in listings:
+        total = lst["price"] + (lst.get("condo") or 0) + (lst.get("iptu") or 0)
+        if total > max_total_price:
+            continue
         if is_new(lst["id"]):
             save_listing(lst)
-            notify(
-                "Novo Apartamento!",
-                f"{lst['bedrooms']}q · {lst['area']}m² · R${lst['price']:,} — {lst['title']}",
-            )
+            if not first_run:
+                notify(
+                    "Novo Apartamento!",
+                    f"{lst['bedrooms']}q · {lst['area']}m² · R${lst['price']:,} — {lst['title']}",
+                )
             log_listing(lst)
             new_found += 1
             print(
@@ -42,8 +48,20 @@ def run_once():
 
     print(
         f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-        f"Checked {len(listings)} listings, {new_found} new.\n"
+        f"Checked {len(listings)} listings, {new_found} new "
+        f"(max total R${max_total_price:,}, next run in {get_setting('interval_seconds')}s).\n"
     )
+
+
+def run_forever():
+    """Re-run the scraper every N seconds; N is re-read from settings each tick
+    so changes made in the dashboard apply without a restart."""
+    last_run = time.time()
+    while True:
+        time.sleep(1)
+        if time.time() - last_run >= get_setting("interval_seconds"):
+            run_once()
+            last_run = time.time()
 
 
 if __name__ == "__main__":
@@ -51,8 +69,4 @@ if __name__ == "__main__":
 
     run_once()  # immediate first run
 
-    schedule.every(INTERVAL_MINUTES).minutes.do(run_once)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+    run_forever()
