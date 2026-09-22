@@ -1,0 +1,95 @@
+# Gera os instaladores e publica a Release quando uma tag vX.Y.Z é enviada.
+# Processo completo em docs/lancamentos.md.
+#
+# Rodar manualmente (Actions → Release → Run workflow) só gera os artefatos,
+# sem publicar release — serve para testar o empacotamento antes de lançar.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    name: tag == version.py
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: echo "version=$(python3 -c 'from version import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
+      - if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ "$GITHUB_REF_NAME" != "v${{ steps.v.outputs.version }}" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com version.py (v${{ steps.v.outputs.version }})."
+            exit 1
+          fi
+
+  build-macos:
+    name: macOS (${{ matrix.arch }})
+    needs: check-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-latest, arch: arm64 }      # Apple Silicon
+          - { runner: macos-15-intel, arch: x86_64 }   # Intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: scripts/build-macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Farejador-macOS-${{ matrix.arch }}
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Windows (x64)
+    needs: check-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: scripts\build-windows.bat
+        shell: cmd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Farejador-Windows-x64
+          path: dist/Farejador-*-Windows-x64.exe
+          if-no-files-found: error
+
+  release:
+    name: publicar Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check-version, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Notas a partir do CHANGELOG
+        run: python3 scripts/changelog_section.py "${{ needs.check-version.outputs.version }}" > notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Farejador ${{ needs.check-version.outputs.version }}
+          body_path: notes.md
+          generate_release_notes: true
+          files: artifacts/*
