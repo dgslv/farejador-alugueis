@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime
-from config import DB_PATH
+from config import DB_PATH, INTERVAL_SECONDS, MAX_TOTAL_PRICE
 
 
 def _connect():
@@ -45,6 +45,12 @@ def init_db():
                 label    TEXT,
                 active   INTEGER NOT NULL DEFAULT 1,
                 added_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
             )
         """)
         # Seed with hardcoded URLs if table is empty
@@ -159,3 +165,38 @@ def toggle_source(source_id: int):
             (source_id,),
         )
         conn.commit()
+
+
+# ── Settings (user-editable, stored in DB; config.py holds the defaults) ───────
+
+SETTING_DEFAULTS = {
+    "max_total_price": MAX_TOTAL_PRICE,
+    "interval_seconds": INTERVAL_SECONDS,
+}
+
+
+def get_setting(key: str) -> int:
+    with _connect() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    if row is None:
+        return SETTING_DEFAULTS[key]
+    try:
+        return int(row["value"])
+    except (TypeError, ValueError):
+        return SETTING_DEFAULTS[key]
+
+
+def set_setting(key: str, value: int):
+    if key not in SETTING_DEFAULTS:
+        raise KeyError(key)
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, str(int(value))),
+        )
+        conn.commit()
+
+
+def get_settings() -> dict:
+    return {k: get_setting(k) for k in SETTING_DEFAULTS}

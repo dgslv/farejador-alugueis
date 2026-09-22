@@ -3,7 +3,7 @@ import json
 import re
 from datetime import datetime, timedelta
 from flask import Flask, redirect, url_for, request
-from storage import get_all_listings, mark_checked, toggle_tracked, init_db, get_sources, add_source, delete_source, toggle_source
+from storage import get_all_listings, mark_checked, toggle_tracked, init_db, get_sources, add_source, delete_source, toggle_source, get_settings, set_setting
 
 app = Flask(__name__)
 
@@ -13,6 +13,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
 <title>Aluguel Dashboard</title>
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
@@ -584,6 +585,7 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
 <title>Fontes — Aluguel</title>
 <style>
   body {{ font-family: sans-serif; margin: 24px; background: #f5f5f5; }}
@@ -654,6 +656,23 @@ SOURCES_TEMPLATE = """<!DOCTYPE html>
     </div>
   </form>
 </div>
+
+<div class="add-form">
+  <h3>Configurações</h3>
+  <form method="POST" action="/settings">
+    <div class="row">
+      <div>
+        <label>Preço total máximo (aluguel + condomínio + IPTU)</label>
+        <input name="max_total_price" type="number" min="1" value="{max_total_price}" required>
+      </div>
+      <div>
+        <label>Intervalo entre buscas (segundos)</label>
+        <input name="interval_seconds" type="number" min="5" max="86400" value="{interval_seconds}" required>
+      </div>
+      <button type="submit" class="btn-add">Salvar</button>
+    </div>
+  </form>
+</div>
 </body>
 </html>"""
 
@@ -692,7 +711,19 @@ def sources():
             added_at=added,
         ))
     body = "\n".join(rows) if rows else '<tr><td colspan="4" class="empty">Nenhuma fonte cadastrada.</td></tr>'
-    return SOURCES_TEMPLATE.format(rows=body)
+    return SOURCES_TEMPLATE.format(rows=body, **get_settings())
+
+
+@app.route("/settings", methods=["POST"])
+def settings_save():
+    for key, lo, hi in (("max_total_price", 1, 10_000_000), ("interval_seconds", 5, 86400)):
+        raw = request.form.get(key, "").strip()
+        try:
+            value = int(raw)
+        except ValueError:
+            continue  # ignore garbage, keep the stored value
+        set_setting(key, max(lo, min(hi, value)))
+    return redirect(url_for("sources"))
 
 
 @app.route("/sources/add", methods=["POST"])

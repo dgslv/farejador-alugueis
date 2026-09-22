@@ -24,7 +24,13 @@ EXCLUDED_NEIGHBORHOODS = []
 
 DB_PATH = str(_DATA / "listings.db")
 LOG_PATH = str(_DATA / "alerts.log")
-INTERVAL_MINUTES = 15
+APP_LOG_PATH = str(_DATA / "app.log")  # stdout/stderr of the packaged app
+# Where the desktop app keeps Playwright's Chromium. Must be set explicitly:
+# inside a PyInstaller bundle Playwright defaults to a read-only folder in the .app.
+BROWSERS_PATH = str(_DATA / "ms-playwright")
+# Defaults only — both are editable in the Fontes tab and stored in the DB.
+INTERVAL_SECONDS = 15 * 60
+MAX_TOTAL_PRICE = 9000  # aluguel + condomínio + IPTU
 PAGE_SIZE = 36
 MAX_PAGES = 5
 

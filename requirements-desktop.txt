@@ -5,3 +5,4 @@ pywebview>=5.0
 plyer>=2.1
 pillow>=10.0
 pyinstaller>=6.0
+playwright-stealth>=2.0
