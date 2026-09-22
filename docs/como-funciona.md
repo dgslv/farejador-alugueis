@@ -17,7 +17,7 @@ app.py ─┬─ thread: dashboard.py (Flask em 127.0.0.1:8080)
 | `scraper.py` | Abre cada fonte no Chromium (headless, com [playwright-stealth](https://github.com/AtuboDad/playwright_stealth)), rola a página para carregar os cards, segue a paginação até `MAX_PAGES` e converte cada card em um dicionário de anúncio. Só ele fala com a rede. |
 | `storage.py` | Tudo que toca o SQLite: anúncios, fontes (URLs de busca) e configurações. Migrações são `ALTER TABLE` tolerantes — rodar de novo não quebra. |
 | `dashboard.py` | O painel: Flask com o HTML dentro de strings Python (sem build de frontend). Abas Apartamentos e Fontes, modal de detalhes, lightbox de fotos, atualização automática via `/fragment`. |
-| `notifier.py` | Notificação do sistema (plyer; no macOS cai para `osascript` se o plyer falhar) e o `alerts.log`. |
+| `notifier.py` | Notificação do sistema e o `alerts.log`. No `.app` do macOS usa o `UNUserNotificationCenter` nativo (pede permissão na primeira abertura); rodando do código-fonte no macOS cai para `osascript`; no Windows/Linux usa o plyer. O botão *Testar notificação* da aba Fontes chama a mesma função. |
 | `config.py` | Pasta de dados por sistema (com migração da pasta antiga "Aluguel" e a variável `FAREJADOR_DATA_DIR`), caminhos, valores padrão e o nome do app. |
 | `version.py` | `__version__`, lido pelos specs do PyInstaller e pelo workflow de release. |
 | `menubar.py` | Extra opcional para macOS: ícone na barra de menus com o status do scraper. Precisa de `pip install rumps` e lê um `scraper.log` na pasta do projeto (`python main.py | tee scraper.log`). Não vai no instalador. |
@@ -31,8 +31,8 @@ app.py ─┬─ thread: dashboard.py (Flask em 127.0.0.1:8080)
    - para cada card, lê o `href` e o `inner_text` e extrai id, quartos, área e preço do slug da URL; preço mensal, condomínio, IPTU, bairro e rua do texto (regex em `scraper.py`); e as URLs das fotos;
    - cards de "várias unidades" não têm link direto: o scraper clica, lê o link de aluguel no modal e fecha com Esc;
    - segue o link "próxima página" enquanto existir, até `MAX_PAGES` (5). Uma página que falha encerra a paginação daquela fonte sem perder o que já veio.
-3. De volta em `main`, cada anúncio com `preço + condomínio + IPTU ≤ teto` é salvo. Se é novo, dispara notificação e vai para `alerts.log`; se já existia, só atualiza `last_seen_at`.
-4. Anúncios **monitorados** (botão *Monitorar* no painel) que não apareceram nesta rodada são registrados no log; o painel os marca como **SUMIU** quando `last_seen_at` passa de 35 minutos.
+3. De volta em `main`, cada anúncio com `preço + condomínio + IPTU ≤ teto` é salvo. Se é novo, dispara notificação e vai para `alerts.log`; se já existia, só atualiza `last_seen_at`. Com o banco vazio (primeira rodada) tudo é salvo em silêncio — senão seriam dezenas de notificações de uma vez.
+4. Anúncios **monitorados** (botão *Monitorar* no painel) que não apareceram nesta rodada são registrados no log; o painel os marca como **SUMIU** quando `last_seen_at` fica mais velho que 3 intervalos de busca (mínimo 5 min), para que uma única página que falhou não dispare o alarme.
 
 Pausas aleatórias de 1,5–3 s entre páginas, user agent de desktop comum e o modo stealth são o que mantém o robô discreto. O intervalo padrão de 15 minutos é deliberadamente conservador — ver "Aviso legal" no README.
 
@@ -47,7 +47,7 @@ Pausas aleatórias de 1,5–3 s entre páginas, user agent de desktop comum e o 
 | `area`, `bedrooms` | Do slug da URL; 0 quando ausente |
 | `street`, `neighborhood`, `images` (JSON) | Do texto/fotos do card |
 | `seen_at` | Primeira vez que apareceu — define a marca **novo** (últimas 24 h e não visto) |
-| `last_seen_at` | Última rodada em que apareceu — define **SUMIU** para monitorados |
+| `last_seen_at` | Última rodada em que apareceu — define **SUMIU** para monitorados (mais velho que 3 intervalos, mínimo 5 min) |
 | `checked`, `checked_at` | Marcado como visto no painel |
 | `tracked` | Monitorado (favorito) |
 
@@ -59,7 +59,8 @@ Pausas aleatórias de 1,5–3 s entre páginas, user agent de desktop comum e o 
 
 - PyInstaller, um spec por sistema (`farejador-macos.spec` → `Farejador.app` dentro de um `.dmg`; `farejador-windows.spec` → `Farejador.exe` de arquivo único). Ambos leem a versão de `version.py`.
 - O **Chromium não vai no instalador** (seriam +150 MB e a pasta do bundle é somente leitura). `app.py` aponta `PLAYWRIGHT_BROWSERS_PATH` para a pasta de dados e instala na primeira execução chamando o driver do Playwright direto (`node cli.js install chromium`) — chamar `sys.executable -m playwright` dentro do bundle relançaria o próprio app.
-- Os instaladores são gerados pelo GitHub Actions ([release.yml](../.github/workflows/release.yml)) a partir dos mesmos scripts que rodam localmente (`scripts/build-*`). Não são assinados — daí os avisos do Gatekeeper e do SmartScreen documentados no README.
+- Os instaladores são gerados pelo GitHub Actions ([release.yml](../.github/workflows/release.yml)) a partir dos mesmos scripts que rodam localmente (`scripts/build-*`), e cada build passa por um smoke test: o binário sobe, o painel responde e o `app.log` não tem traceback. Não são assinados com identidade da Apple — daí os avisos do Gatekeeper e do SmartScreen documentados no README.
+- O macOS amarra a permissão de notificações à identidade de assinatura, e a assinatura ad-hoc do PyInstaller muda a cada build. `scripts/build-macos.sh` assina com uma identidade fixa (`SIGN_IDENTITY`, padrão `Farejador Dev`, autoassinada serve) quando ela existe na máquina; no CI não existe, então o build fica ad-hoc.
 
 ## Decisões de projeto
 

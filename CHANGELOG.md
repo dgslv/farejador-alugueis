@@ -11,8 +11,13 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - O app agora se chama **Farejador de Aluguéis**: os instaladores são `Farejador.app` / `Farejador.exe` e a pasta de dados passa de `Aluguel` para `Farejador`. A pasta antiga é migrada automaticamente na primeira abertura — nada se perde.
 - O scraper roda em modo *headless* com [playwright-stealth](https://github.com/AtuboDad/playwright_stealth): sem janela de navegador aparecendo e com menos bloqueios do site.
 - Preço total máximo e intervalo entre buscas agora são configurados na aba **Fontes**, sem editar arquivo; valem sem reiniciar.
+- A primeira busca de uma instalação nova só guarda os anúncios, sem notificar (antes chegavam dezenas de avisos de uma vez).
+- A marca **SUMIU** passa a considerar o intervalo configurado (3 buscas sem ver o anúncio, mínimo 5 min) em vez de 35 minutos fixos.
 
 ### Adicionado
+
+- Notificações nativas no macOS (o app pede permissão na primeira abertura) e o botão **Testar notificação** na aba Fontes.
+- Cada instalador gerado no CI passa por um smoke test antes de ser publicado: o binário sobe, o painel responde e o `app.log` não tem erro.
 
 - Projeto aberto no GitHub: README para quem não programa, guia de contribuição, código de conduta, política de segurança e regras de governança/merge.
 - Testes automatizados (parser com cards reais do VivaReal, banco, painel, pasta de dados) e lint, rodando em Linux, macOS e Windows a cada PR.

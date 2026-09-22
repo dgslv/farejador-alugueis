@@ -69,6 +69,13 @@ def test_mark_checked_moves_listing_to_the_end(db):
     assert rows[1]["checked_at"]
 
 
+def test_count_listings_counts_distinct_ids(db):
+    assert storage.count_listings() == 0
+    storage.save_listing(LISTING)
+    storage.save_listing(LISTING)  # mesma chave: continua 1
+    assert storage.count_listings() == 1
+
+
 def test_toggle_tracked_round_trip(db):
     storage.save_listing(LISTING)
     storage.toggle_tracked(LISTING["id"])

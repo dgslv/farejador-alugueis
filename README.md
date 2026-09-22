@@ -54,8 +54,8 @@ O Farejador usa um navegador próprio (Chromium) para ler o site. Na primeira ve
 
 1. No seu navegador, abra o [VivaReal](https://www.vivareal.com.br), monte a busca do jeito que quiser (cidade, bairros, quartos, preço, área) e **copie a URL** da barra de endereço.
 2. No Farejador, aba **Fontes** → cole a URL, dê um nome (ex. "Botafogo 2 quartos") → **Adicionar**. Cadastre quantas buscas quiser; cada uma pode ser pausada ou removida depois.
-3. Ainda em **Fontes**, ajuste o **preço total máximo** (aluguel + condomínio + IPTU) e o **intervalo** entre as buscas. Anúncios acima do teto são ignorados.
-4. Deixe o app aberto (pode minimizar). Quando aparecer um anúncio novo, você recebe uma notificação e ele surge na aba **Apartamentos** com a marca **novo**.
+3. Ainda em **Fontes**, ajuste o **preço total máximo** (aluguel + condomínio + IPTU) e o **intervalo** entre as buscas. Anúncios acima do teto são ignorados. O botão **Testar notificação** confirma que os avisos estão chegando (no macOS, aceite quando o sistema perguntar se o Farejador pode notificar).
+4. Deixe o app aberto (pode minimizar). A primeira busca só guarda o que já está no site, sem avisar — senão seriam dezenas de notificações de uma vez. A partir daí, cada anúncio novo gera uma notificação e aparece na aba **Apartamentos** com a marca **novo**.
 5. Na lista: clique num anúncio para ver as fotos e o preço detalhado, e **Abrir anúncio** para ir ao VivaReal. **Marcar como visto** tira da frente o que você já avaliou. **Monitorar** marca um favorito: se ele sumir do site, o Farejador mostra a marca **SUMIU** — bom sinal de que já foi alugado.
 
 ## Onde ficam os meus dados

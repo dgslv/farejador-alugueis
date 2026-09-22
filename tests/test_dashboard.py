@@ -92,6 +92,17 @@ def test_sources_add_ignores_empty_url(client):
     assert storage.get_sources() == []
 
 
+def test_notify_test_route_sends_one_notification(client, monkeypatch):
+    import notifier
+
+    sent = []
+    monkeypatch.setattr(notifier, "notify", lambda title, message: sent.append((title, message)))
+    r = client.post("/notify-test")
+    assert r.status_code == 302
+    assert len(sent) == 1
+    assert sent[0][0] == "Farejador"
+
+
 def test_settings_save_persists_values(client):
     client.post("/settings", data={"max_total_price": "7000", "interval_seconds": "600"})
     assert storage.get_settings() == {"max_total_price": 7000, "interval_seconds": 600}

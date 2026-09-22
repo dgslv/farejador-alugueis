@@ -59,7 +59,9 @@ Caso conhecido: card sem a linha da rua mostra "Tamanho do imóvel" como rua. Es
 
 ## As notificações não aparecem
 
-- **macOS**: Ajustes do Sistema → Notificações → Farejador → permitir. Se o app não estiver na lista, abra-o e espere a primeira notificação (o macOS só lista depois do primeiro envio).
+Primeiro: aba **Fontes → Testar notificação**. Se o teste aparece, o app está certo e o que falta é anúncio novo — lembre que a **primeira busca não avisa** de propósito.
+
+- **macOS**: na primeira abertura o sistema pergunta se o Farejador pode enviar notificações; se você negou, vá em Ajustes do Sistema → Notificações → Farejador → permitir. Se o app não estiver na lista, o pedido de permissão falhou: procure `permission granted=False` ou `delivery error` no `app.log` e abra uma issue com essa linha (instaladores gerados no CI têm assinatura ad-hoc, e versões recentes do macOS podem recusar notificações nativas de apps assim).
 - **Windows**: Configurações → Sistema → Notificações → ativar, e conferir se o modo *Não perturbe / Assistente de foco* não está ligado.
 - Os avisos também ficam gravados em `alerts.log`, na pasta de dados, mesmo quando a notificação não aparece.
 
