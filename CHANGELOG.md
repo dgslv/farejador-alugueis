@@ -17,8 +17,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Adicionado
 
 - Variável de ambiente `FAREJADOR_PORT` para mudar a porta do painel quando a 8080 está ocupada.
-
-- Logo e ícone próprios: no `.app`, no `.exe`, no painel e na tela de primeira abertura (`assets/`, gerados por `scripts/make-icons.py`).
+- Logo e ícone próprios: no `.app`, no `.exe`, no painel e na tela de primeira abertura (fonte em `assets/farejador.svg`, gerados por `packaging/make-icons.py`).
 - Projeto aberto no GitHub: README para quem não programa, guia de contribuição, código de conduta, política de segurança e regras de governança/merge.
 - Testes automatizados (parser com cards reais do VivaReal, banco, painel, agendador, pasta de dados) e lint, rodando em Linux, macOS e Windows a cada PR.
 - Releases automáticos por tag: `.dmg` para Mac Apple Silicon **e** Intel, `.exe` para Windows, com `SHA256SUMS.txt`.
@@ -26,7 +25,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Corrigido
 
-- `pip install -r requirements.txt` falhava no Windows e no Linux por causa do `rumps`, que só existe no macOS (hoje é opcional, só para `menubar.py`).
+- A instalação a partir do código-fonte falhava no Windows e no Linux por causa do `rumps`, que só existe no macOS e só servia ao `menubar.py` (removido).
 
 ### Removido
 
