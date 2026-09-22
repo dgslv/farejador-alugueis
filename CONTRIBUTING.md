@@ -93,7 +93,7 @@ Branch a partir de `main`, nome `tipo/descricao-curta` (ex. `fix/preco-com-centa
 5. Alguém — talvez o mantenedor, talvez outra pessoa — vai revisar. Responda aos comentários com commits novos (não reescreva o histórico da branch durante a revisão; fica mais fácil acompanhar).
 6. Com CI verde e aprovação do mantenedor, ele faz o merge. A branch é apagada automaticamente.
 
-**Mexeu em empacotamento** (`packaging/**`, `pyproject.toml`, `src/farejador/desktop.py`, `__main__.py`)? O workflow *Release* roda automaticamente no seu PR e deixa os instaladores dos três sistemas como artefatos (aba *Actions* → o run do seu PR → *Artifacts*). Baixe o do seu sistema, instale e conte no PR o que aconteceu — isso é o que valida a mudança, não o build ter ficado verde.
+**Mexeu em empacotamento** (`packaging/**`, `pyproject.toml`, `src/farejador/desktop.py`, `__main__.py`)? Rode `scripts/validate-local.sh` (macOS: venv nova, testes, build do `.app`, abre o app e faz uma coleta real numa pasta isolada) e cole o final da saída no PR. O workflow *Release* também roda automaticamente no seu PR e deixa os instaladores dos três sistemas como artefatos (aba *Actions* → o run do seu PR → *Artifacts*) — abrir o do seu sistema é o que valida a mudança, não o build ter ficado verde.
 
 ## Revisando o PR de outra pessoa
 
