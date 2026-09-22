@@ -1,5 +1,0 @@
-# Desenvolvimento: testes e lint. Inclui as dependências de execução.
--r requirements.txt
-pytest>=8.0
-ruff>=0.5
-pre-commit>=3.0

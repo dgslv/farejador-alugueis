@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active = "sources" %}
+{% block title %}Fontes — Farejador de Aluguéis{% endblock %}
+{% block content %}
+<table>
+  <thead>
+    <tr>
+      <th>Fonte</th>
+      <th>Status</th>
+      <th>Adicionada</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sources %}
+    <tr>
+      <td>
+        <div class="src-label">{{ s.label or "—" }}</div>
+        <span class="src-url" title="{{ s.url }}">{{ s.url }}</span>
+      </td>
+      <td><span class="{{ 'badge-active' if s.active else 'badge-paused' }}">{{ "Ativa" if s.active else "Pausada" }}</span></td>
+      <td style="font-size:12px;color:#999">{{ (s.added_at[:16] | replace("T", " ")) if s.added_at else "—" }}</td>
+      <td style="display:flex;gap:6px">
+        <form method="POST" action="{{ url_for('dashboard.source_toggle', sid=s.id) }}">
+          <button type="submit" class="btn-toggle">{{ "Pausar" if s.active else "Ativar" }}</button>
+        </form>
+        <form method="POST" action="{{ url_for('dashboard.source_delete', sid=s.id) }}" onsubmit="return confirm('Remover esta fonte?')">
+          <button type="submit" class="btn-danger">Remover</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="empty">Nenhuma fonte cadastrada.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="add-form">
+  <h3>Adicionar nova fonte</h3>
+  <form method="POST" action="{{ url_for('dashboard.source_add') }}">
+    <div class="row">
+      <div>
+        <label>Nome (opcional)</label>
+        <input name="label" placeholder="Ex: Botafogo 2q" autocomplete="off">
+      </div>
+      <div>
+        <label>URL do VivaReal</label>
+        <input name="url" placeholder="https://www.vivareal.com.br/aluguel/..." required autocomplete="off">
+      </div>
+      <button type="submit" class="btn-add">+ Adicionar</button>
+    </div>
+  </form>
+</div>
+
+<div class="add-form">
+  <h3>Configurações</h3>
+  <form method="POST" action="{{ url_for('dashboard.settings_save') }}">
+    <div class="row">
+      <div>
+        <label>Preço total máximo (aluguel + condomínio + IPTU)</label>
+        <input name="max_total_price" type="number" min="1" value="{{ settings.max_total_price }}" required>
+      </div>
+      <div>
+        <label>Intervalo entre buscas (segundos)</label>
+        <input name="interval_seconds" type="number" min="5" max="86400" value="{{ settings.interval_seconds }}" required>
+      </div>
+      <button type="submit" class="btn-add">Salvar</button>
+    </div>
+  </form>
+  <form method="POST" action="{{ url_for('dashboard.notify_test') }}" style="margin-top:12px">
+    <button type="submit" class="btn-add btn-toggle">🔔 Testar notificação</button>
+  </form>
+</div>
+{% endblock %}

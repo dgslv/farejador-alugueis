@@ -34,7 +34,7 @@ body:
       label: Como você roda o app?
       options:
         - Baixei o .dmg / .exe da página de Releases
-        - Rodo do código-fonte (python app.py / main.py)
+        - Rodo do código-fonte (farejador / python -m farejador)
     validations:
       required: true
   - type: textarea

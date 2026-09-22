@@ -11,12 +11,11 @@ on:
     tags: ["v*"]
   pull_request:
     paths:
-      - "*.spec"
-      - "app.py"
-      - "version.py"
-      - "requirements*.txt"
-      - "scripts/build-*"
-      - "assets/**"
+      - "packaging/**"
+      - "pyproject.toml"
+      - "src/farejador/__init__.py"
+      - "src/farejador/__main__.py"
+      - "src/farejador/desktop.py"
       - ".github/workflows/release.yml"
   workflow_dispatch:
 
@@ -32,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: v
-        run: echo "version=$(python3 -c 'from version import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/farejador/__init__.py)" >> "$GITHUB_OUTPUT"
       - if: startsWith(github.ref, 'refs/tags/')
         run: |
           if [ "$GITHUB_REF_NAME" != "v${{ steps.v.outputs.version }}" ]; then
@@ -55,7 +54,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: scripts/build-macos.sh
+      - run: packaging/build-macos.sh
       - name: Smoke test — o .app sobe o painel sem erro de import
         run: |
           set -e
@@ -86,7 +85,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: scripts\build-windows.bat
+      - run: packaging\build-windows.bat
         shell: cmd
       - name: Smoke test — o .exe sobe o painel sem erro de import
         shell: pwsh

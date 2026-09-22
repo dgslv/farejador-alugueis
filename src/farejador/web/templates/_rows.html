@@ -1,0 +1,27 @@
+{% for r in rows %}
+<tr class="{{ r.css_class }}" onclick="openDetail({{ r.modal_json }})" title="Ver detalhes">
+  <td class="thumb-cell" onclick="event.stopPropagation()">
+    {%- if r.images -%}
+    <img class="thumb" src="{{ r.images[0] }}" loading="lazy" onclick="openLb({{ r.images | tojson | forceescape }}, 0)" title="{{ r.images | length }} foto(s)">
+    {%- else -%}
+    <div class="no-img">sem foto</div>
+    {%- endif -%}
+  </td>
+  <td class="apt-title">{{ r.title }}{% if r.fresh %} <span class="fresh-badge">novo</span>{% endif %}{% if r.gone %} <span class="gone-badge">SUMIU</span>{% endif %}</td>
+  <td>{{ r.street or "—" }}</td>
+  <td>{{ r.neighborhood or "—" }}</td>
+  <td>{{ r.seen_at }}</td>
+  <td>{{ r.bedrooms or "—" }}</td>
+  <td>{{ r.area_str }}</td>
+  <td class="price">{{ r.price_str }}</td>
+  <td class="total">{{ r.total_str }}</td>
+  <td onclick="event.stopPropagation()">
+    <form method="POST" action="{{ url_for('dashboard.check', listing_id=r.id) }}">
+      <button type="submit">{{ r.action_label }}</button>
+    </form>
+    <form method="POST" action="{{ url_for('dashboard.toggle_track', listing_id=r.id) }}">
+      <button type="submit" class="track-btn {{ r.track_btn_class }}">{{ r.track_label }}</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}

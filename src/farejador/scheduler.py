@@ -1,10 +1,10 @@
-import asyncio
-import time
-from datetime import datetime
+"""O agendador: uma rodada = buscar todas as fontes ativas, salvar e avisar do que é novo."""
 
-from notifier import log_listing, notify
-from scraper import fetch_listings
-from storage import (
+import asyncio
+import logging
+import time
+
+from farejador.db import (
     count_listings,
     get_setting,
     get_sources,
@@ -13,22 +13,26 @@ from storage import (
     is_new,
     save_listing,
 )
+from farejador.notify import log_listing, notify
+from farejador.scrapers.vivareal import fetch_listings
+
+log = logging.getLogger(__name__)
 
 
-def run_once():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Fetching listings...")
+def run_once() -> None:
+    log.info("Fetching listings...")
     try:
         urls = [s["url"] for s in get_sources() if s["active"]]
         listings = asyncio.run(fetch_listings(urls))
     except Exception as exc:
-        print(f"  ERROR fetching listings: {exc}")
+        log.error("ERROR fetching listings: %s", exc)
         return
 
     max_total_price = get_setting("max_total_price")
-    # Empty DB = first run: everything is "new", don't fire dozens of notifications.
+    # Banco vazio = primeira rodada: tudo é "novo"; não dispara dezenas de notificações.
     first_run = count_listings() == 0
     if first_run:
-        print("  [notify] first run: saving listings silently")
+        log.info("first run: saving listings silently")
     new_found = 0
     for lst in listings:
         total = lst["price"] + (lst.get("condo") or 0) + (lst.get("iptu") or 0)
@@ -43,27 +47,27 @@ def run_once():
                 )
             log_listing(lst)
             new_found += 1
-            print(
-                f"  NEW: {lst['bedrooms']}q {lst['area']}m² R${lst['price']:,} — {lst['url']}"
-            )
+            log.info("NEW: %sq %sm² R$%s — %s", lst["bedrooms"], lst["area"], f"{lst['price']:,}", lst["url"])
         else:
-            save_listing(lst)  # update last_seen_at for existing listings
+            save_listing(lst)  # só atualiza last_seen_at
 
     scraped_ids = {lst["id"] for lst in listings}
     for tid in get_tracked_ids():
         if tid not in scraped_ids:
-            print(f"  TRACKED LISTING NOT FOUND: {tid}")
+            log.info("TRACKED LISTING NOT FOUND: %s", tid)
 
-    print(
-        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-        f"Checked {len(listings)} listings, {new_found} new "
-        f"(max total R${max_total_price:,}, next run in {get_setting('interval_seconds')}s).\n"
+    log.info(
+        "Checked %d listings, %d new (max total R$%s, next run in %ss)",
+        len(listings),
+        new_found,
+        f"{max_total_price:,}",
+        get_setting("interval_seconds"),
     )
 
 
-def run_forever():
-    """Re-run the scraper every N seconds; N is re-read from settings each tick
-    so changes made in the dashboard apply without a restart."""
+def run_forever() -> None:
+    """Repete a cada N segundos; N é relido do banco a cada tique, então mudar
+    no painel vale sem reiniciar."""
     last_run = time.time()
     while True:
         time.sleep(1)
@@ -72,9 +76,8 @@ def run_forever():
             last_run = time.time()
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Modo headless: só o robô, no terminal (`farejador --headless`)."""
     init_db()
-
-    run_once()  # immediate first run
-
+    run_once()
     run_forever()

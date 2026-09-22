@@ -1,25 +1,30 @@
+"""Scraper do VivaReal: abre cada busca num Chromium headless e converte os cards em anúncios."""
+
 import asyncio
 import json
+import logging
 import random
 import re
 
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-from config import EXCLUDED_NEIGHBORHOODS, HEADLESS, MAX_PAGES, SEARCH_URLS, USER_AGENT
+from farejador.config import EXCLUDED_NEIGHBORHOODS, HEADLESS, MAX_PAGES, USER_AGENT
+
+log = logging.getLogger(__name__)
 
 # URL pattern: /imovel/apartamento-N-quartos-...-Xm2-aluguel-RSPRICE-id-ID/
 _URL_RE = re.compile(
     r"/imovel/(?P<slug>[^/]+)-id-(?P<id>\d+)/",
     re.IGNORECASE,
 )
-_ROOMS_RE  = re.compile(r"-(\d+)-quartos?-", re.IGNORECASE)
-_AREA_RE   = re.compile(r"-(\d+)m2-", re.IGNORECASE)
+_ROOMS_RE = re.compile(r"-(\d+)-quartos?-", re.IGNORECASE)
+_AREA_RE = re.compile(r"-(\d+)m2-", re.IGNORECASE)
 _PRICE_URL = re.compile(r"-RS(\d+)-id-", re.IGNORECASE)
 # Matches rental price in card text: "R$ 5.800/mês" or "R$5800/mês"
 _PRICE_TXT = re.compile(r"R\$\s*([\d.,]+)\s*/\s*m[eê]s", re.IGNORECASE)
-_CONDO_RE  = re.compile(r"Cond\.\s*R\$\s*([\d.,]+)", re.IGNORECASE)
-_IPTU_RE   = re.compile(r"IPTU\s+R\$\s*([\d.,]+)", re.IGNORECASE)
+_CONDO_RE = re.compile(r"Cond\.\s*R\$\s*([\d.,]+)", re.IGNORECASE)
+_IPTU_RE = re.compile(r"IPTU\s+R\$\s*([\d.,]+)", re.IGNORECASE)
 
 
 def _parse_brl(raw: str) -> int:
@@ -49,7 +54,7 @@ def _extract_card_fields(text: str) -> dict:
     mc = _CONDO_RE.search(text)
     mi = _IPTU_RE.search(text)
     condo = _parse_brl(mc.group(1)) if mc else 0
-    iptu  = _parse_brl(mi.group(1)) if mi else 0
+    iptu = _parse_brl(mi.group(1)) if mi else 0
 
     return {"neighborhood": neighborhood, "street": street, "condo": condo, "iptu": iptu}
 
@@ -64,10 +69,10 @@ def _parse_link(href: str, title: str):
     slug = m.group("slug")
 
     rooms_m = _ROOMS_RE.search(slug)
-    area_m  = _AREA_RE.search(slug)
+    area_m = _AREA_RE.search(slug)
 
     bedrooms = int(rooms_m.group(1)) if rooms_m else 0
-    area     = float(area_m.group(1)) if area_m else 0.0
+    area = float(area_m.group(1)) if area_m else 0.0
 
     # Prefer price from card text (shows rental price even for dual-listed properties)
     price = _price_from_text(title)
@@ -78,18 +83,17 @@ def _parse_link(href: str, title: str):
     card_fields = _extract_card_fields(title)
 
     return {
-        "id":           listing_id,
-        "url":          href.split("?")[0],
-        "title":        title.strip(),
-        "street":       card_fields["street"],
+        "id": listing_id,
+        "url": href.split("?")[0],
+        "title": title.strip(),
+        "street": card_fields["street"],
         "neighborhood": card_fields["neighborhood"],
-        "price":        price,
-        "condo":        card_fields["condo"],
-        "iptu":         card_fields["iptu"],
-        "area":         area,
-        "bedrooms":     bedrooms,
+        "price": price,
+        "condo": card_fields["condo"],
+        "iptu": card_fields["iptu"],
+        "area": area,
+        "bedrooms": bedrooms,
     }
-
 
 
 async def _scroll_to_bottom(page):
@@ -114,7 +118,7 @@ async def _scroll_to_bottom(page):
 
 async def _get_card_images(card) -> list:
     """Return all real image URLs found in a card element."""
-    imgs = await card.locator('img').all()
+    imgs = await card.locator("img").all()
     urls = []
     for img in imgs:
         src = await img.get_attribute("src") or await img.get_attribute("data-src") or ""
@@ -135,7 +139,7 @@ async def _extract_listings(page) -> list:
     for card in cards:
         try:
             link = card.locator('a[href*="/imovel/"]').first
-            href  = await link.get_attribute("href") or ""
+            href = await link.get_attribute("href") or ""
             title = (await card.inner_text()).strip()
             listing = _parse_link(href, title)
             if listing and listing["id"] not in seen_ids:
@@ -147,9 +151,7 @@ async def _extract_listings(page) -> list:
             continue
 
     # 2. Button-based multi-unit cards (open a modal — count as ONE listing each)
-    btn_only = page.locator(
-        'li[data-cy="rp-property-cd"]:not(:has(a[href*="/imovel/"])) a[role="button"]'
-    )
+    btn_only = page.locator('li[data-cy="rp-property-cd"]:not(:has(a[href*="/imovel/"])) a[role="button"]')
     btn_count = await btn_only.count()
     for i in range(btn_count):
         try:
@@ -183,11 +185,8 @@ async def _extract_listings(page) -> list:
     return results
 
 
-async def fetch_listings(urls: list = None) -> list:
-    from storage import is_new as _is_new
-
-    if urls is None:
-        urls = SEARCH_URLS
+async def fetch_listings(urls: list) -> list:
+    from farejador.db import is_new as _is_new
 
     all_listings: list = []
     seen_ids: set = set()
@@ -211,10 +210,10 @@ async def fetch_listings(urls: list = None) -> list:
             page = await context.new_page()
 
             for search_idx, start_url in enumerate(urls, 1):
-                print(f"  [scraper] search {search_idx}/{len(urls)}: {start_url[:80]}")
+                log.info("search %d/%d: %s", search_idx, len(urls), start_url[:80])
                 url = start_url
                 for page_num in range(1, MAX_PAGES + 1):
-                    print(f"  [scraper] page {page_num}: {url[:100]}")
+                    log.info("page %d: %s", page_num, url[:100])
                     # VivaReal never reaches "networkidle" (ads/trackers keep polling),
                     # so wait for the DOM and then for the listing cards themselves.
                     try:
@@ -222,12 +221,12 @@ async def fetch_listings(urls: list = None) -> list:
                         await page.locator('li[data-cy="rp-property-cd"]').first.wait_for(timeout=30_000)
                     except Exception as exc:
                         # Keep what earlier pages gave us instead of failing the whole run.
-                        print(f"  [scraper] page {page_num} failed, stopping pagination: {str(exc).splitlines()[0][:120]}")
+                        log.warning("page %d failed, stopping pagination: %s", page_num, str(exc).splitlines()[0][:120])
                         break
                     await asyncio.sleep(random.uniform(1.5, 3))
 
                     page_listings = await _extract_listings(page)
-                    print(f"  [scraper] found {len(page_listings)} listings on page {page_num}")
+                    log.info("found %d listings on page %d", len(page_listings), page_num)
 
                     # Deduplicate, filter excluded neighborhoods, split into known vs new
                     fresh = []
@@ -243,12 +242,12 @@ async def fetch_listings(urls: list = None) -> list:
                                 fresh.append(lst)
 
                     new_on_page = len(fresh)
-                    print(f"  [scraper] {new_on_page} new listings on page {page_num}")
+                    log.info("%d new listings on page %d", new_on_page, page_num)
 
                     # Follow the "próxima página" link if present
                     next_link = page.locator('a[aria-label="próxima página"]:not([aria-disabled="true"])')
                     if await next_link.count() == 0:
-                        print("  [scraper] no next page button, done.")
+                        log.info("no next page button, done.")
                         break
                     next_href = await next_link.get_attribute("href")
                     if not next_href:

@@ -1,35 +1,42 @@
-"""assets/ — o logo e os ícones que os specs do PyInstaller e o painel referenciam.
+"""Logo e ícones — o que os specs do PyInstaller, o painel e o README referenciam.
 
-Os arquivos são versionados (gerados por scripts/make-icons.py); se algum sumir
+Os arquivos são versionados (gerados por packaging/make-icons.py); se algum sumir
 ou for corrompido, é melhor descobrir aqui do que no build de release.
 """
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "assets"
+ICONS = ROOT / "packaging" / "icons"
+STATIC = ROOT / "src" / "farejador" / "web" / "static"
+
+PNG = b"\x89PNG\r\n\x1a\n"
 
 
 def test_svg_source_exists():
-    assert (ASSETS / "farejador.svg").read_text(encoding="utf-8").lstrip().startswith("<svg")
+    assert (ROOT / "assets" / "farejador.svg").read_text(encoding="utf-8").lstrip().startswith("<svg")
 
 
-def test_logo_png_is_a_png():
-    assert (ASSETS / "logo.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+def test_readme_logo_and_dashboard_logo_are_the_same_png():
+    readme_logo = (ROOT / "assets" / "logo.png").read_bytes()
+    assert readme_logo[:8] == PNG
+    assert (STATIC / "logo.png").read_bytes() == readme_logo
 
 
 def test_windows_icon_is_an_ico():
-    assert (ASSETS / "farejador.ico").read_bytes()[:4] == b"\x00\x00\x01\x00"
+    assert (ICONS / "farejador.ico").read_bytes()[:4] == b"\x00\x00\x01\x00"
 
 
 def test_macos_icon_is_an_icns():
-    assert (ASSETS / "farejador.icns").read_bytes()[:4] == b"icns"
+    assert (ICONS / "farejador.icns").read_bytes()[:4] == b"icns"
 
 
-def test_specs_reference_the_icons_and_bundle_assets():
-    mac = (ROOT / "farejador-macos.spec").read_text(encoding="utf-8")
-    win = (ROOT / "farejador-windows.spec").read_text(encoding="utf-8")
-    assert 'icon="assets/farejador.icns"' in mac
-    assert 'icon="assets/farejador.ico"' in win
-    assert '("assets", "assets")' in mac
-    assert '("assets", "assets")' in win
+def test_specs_reference_the_icons_and_bundle_the_web_assets():
+    mac = (ROOT / "packaging" / "farejador-macos.spec").read_text(encoding="utf-8")
+    win = (ROOT / "packaging" / "farejador-windows.spec").read_text(encoding="utf-8")
+    assert '"icons", "farejador.icns"' in mac
+    assert '"icons", "farejador.ico"' in win
+    for spec in (mac, win):
+        assert '"farejador/web/templates"' in spec
+        assert '"farejador/web/static"' in spec
+        assert '"__main__.py"' in spec  # a única porta de entrada

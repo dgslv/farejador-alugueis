@@ -1,11 +1,14 @@
+"""Persistência em SQLite: anúncios, fontes (URLs de busca) e configurações."""
+
 import sqlite3
 from datetime import datetime
 
-from config import DB_PATH, INTERVAL_SECONDS, MAX_TOTAL_PRICE
+from farejador import paths
+from farejador.config import INTERVAL_SECONDS, MAX_TOTAL_PRICE
 
 
 def _connect():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(paths.db_path())
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -54,15 +57,6 @@ def init_db():
                 value TEXT NOT NULL
             )
         """)
-        # Seed with hardcoded URLs if table is empty
-        count = conn.execute("SELECT count(*) FROM sources").fetchone()[0]
-        if count == 0:
-            from config import SEARCH_URLS
-            for i, url in enumerate(SEARCH_URLS, 1):
-                conn.execute(
-                    "INSERT OR IGNORE INTO sources (url, label, active, added_at) VALUES (?, ?, 1, ?)",
-                    (url, f"Fonte {i}", datetime.now().isoformat()),
-                )
         conn.commit()
 
 
@@ -75,25 +69,43 @@ def is_new(listing_id: str) -> bool:
 def save_listing(listing: dict):
     now = datetime.now().isoformat()
     row = {
-        "street": None, "neighborhood": None,
-        "condo": None, "iptu": None, "images": None, "posted_at": None,
+        "street": None,
+        "neighborhood": None,
+        "condo": None,
+        "iptu": None,
+        "images": None,
+        "posted_at": None,
         **listing,
         "seen_at": now,
         "last_seen_at": now,
     }
     with _connect() as conn:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO listings
-                (id, url, title, street, neighborhood, price, condo, iptu, area, bedrooms, images, posted_at, seen_at, last_seen_at)
+                (id, url, title, street, neighborhood, price, condo, iptu,
+                 area, bedrooms, images, posted_at, seen_at, last_seen_at)
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET last_seen_at = excluded.last_seen_at
-        """, (
-            row["id"], row["url"], row.get("title"), row.get("street"),
-            row.get("neighborhood"), row.get("price"), row.get("condo"),
-            row.get("iptu"), row.get("area"), row.get("bedrooms"),
-            row.get("images"), row.get("posted_at"), row["seen_at"], row["last_seen_at"],
-        ))
+        """,
+            (
+                row["id"],
+                row["url"],
+                row.get("title"),
+                row.get("street"),
+                row.get("neighborhood"),
+                row.get("price"),
+                row.get("condo"),
+                row.get("iptu"),
+                row.get("area"),
+                row.get("bedrooms"),
+                row.get("images"),
+                row.get("posted_at"),
+                row["seen_at"],
+                row["last_seen_at"],
+            ),
+        )
         if listing.get("images"):
             conn.execute(
                 "UPDATE listings SET images=? WHERE id=? AND images IS NULL",
@@ -197,8 +209,7 @@ def set_setting(key: str, value: int):
         raise KeyError(key)
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO settings (key, value) VALUES (?, ?) "
-            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
             (key, str(int(value))),
         )
         conn.commit()

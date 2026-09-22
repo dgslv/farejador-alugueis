@@ -1,25 +1,24 @@
 """Fixtures compartilhadas.
 
-A suíte nunca toca a pasta de dados real do usuário: FAREJADOR_DATA_DIR é
-apontada para uma pasta temporária ANTES de qualquer módulo do app ser
-importado (config.py cria a pasta no import), e cada teste recebe um banco
-SQLite vazio e isolado.
+Todo teste roda numa pasta de dados temporária (FAREJADOR_DATA_DIR), então a
+suíte nunca toca o banco, os logs ou o Chromium de uma instalação real.
 """
 
-import os
-import tempfile
+import pytest
 
-os.environ.setdefault("FAREJADOR_DATA_DIR", tempfile.mkdtemp(prefix="farejador-tests-"))
+from farejador import db as db_module
 
-import pytest  # noqa: E402
 
-import storage  # noqa: E402
+@pytest.fixture(autouse=True)
+def data_dir(tmp_path, monkeypatch):
+    """Pasta de dados isolada para TODO teste (banco, alerts.log, app.log)."""
+    d = tmp_path / "data"
+    monkeypatch.setenv("FAREJADOR_DATA_DIR", str(d))
+    return d
 
 
 @pytest.fixture
-def db(tmp_path, monkeypatch):
-    """Banco vazio: storage.DB_PATH aponta para um arquivo temporário do teste."""
-    path = tmp_path / "listings.db"
-    monkeypatch.setattr(storage, "DB_PATH", str(path))
-    storage.init_db()
-    return path
+def db(data_dir):
+    """Banco vazio com as tabelas criadas. Devolve o caminho do arquivo."""
+    db_module.init_db()
+    return data_dir / "listings.db"

@@ -1,11 +1,11 @@
-"""Parser dos cards do VivaReal — as funções puras de scraper.py.
+"""Parser dos cards do VivaReal — as funções puras de scrapers/vivareal.py.
 
 Nada aqui abre navegador: só texto e URL entram, dicionário sai.
 """
 
 import pytest
 
-from scraper import _extract_card_fields, _parse_brl, _parse_link, _price_from_text
+from farejador.scrapers.vivareal import _extract_card_fields, _parse_brl, _parse_link, _price_from_text
 from tests.data import BOTAFOGO_2Q, HUMAITA_SEM_RUA
 
 # ── _parse_link: URL + texto do card → anúncio ───────────────────────────────

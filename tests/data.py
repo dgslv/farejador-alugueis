@@ -6,9 +6,7 @@ assim que o parser encontra o texto em produção. Ao capturar um card novo,
 cole o texto sem retocar (as quebras de linha fazem parte do formato).
 """
 
-SEARCH_URL = (
-    "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/zona-sul/botafogo/apartamento_residencial/"
-)
+SEARCH_URL = "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/zona-sul/botafogo/apartamento_residencial/"
 
 # Card completo: rua, condomínio e IPTU presentes.
 BOTAFOGO_2Q = {
