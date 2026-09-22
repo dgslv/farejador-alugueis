@@ -1,10 +1,10 @@
 """
-Desktop entry point for Aluguel.
+Desktop entry point for Farejador de Aluguéis.
 Starts Flask dashboard + scraper scheduler, then opens a native pywebview window.
 """
-import sys
 import os
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -13,13 +13,14 @@ import webview
 
 # Force headless scraping when running as desktop app (no browser window pop-ups)
 import config as _cfg
+
 _cfg.HEADLESS = True
 
 # Both the installer subprocess and the scraper read this env var, so they agree
 # on where Chromium lives. Must happen before playwright is imported anywhere.
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = _cfg.BROWSERS_PATH
 
-from storage import init_db
+from storage import init_db  # noqa: E402  (must come after the env var above)
 
 _browsers_ready = threading.Event()
 
@@ -39,7 +40,7 @@ def _install_chromium(window: webview.Window):
     window.load_html("""
     <html><body style="font-family:sans-serif;display:flex;align-items:center;
     justify-content:center;height:100vh;margin:0;background:#f5f5f5;flex-direction:column;gap:12px">
-    <h2 style="color:#333;margin:0">Configurando Aluguel…</h2>
+    <h2 style="color:#333;margin:0">Configurando o Farejador…</h2>
     <p style="color:#666;margin:0">Instalando navegador (~300 MB, apenas na primeira vez).</p>
     <p style="color:#999;font-size:13px;margin:0">Aguarde, pode levar alguns minutos.</p>
     </body></html>
@@ -61,7 +62,7 @@ def _start_flask():
 
 def _start_scheduler():
     _browsers_ready.wait()  # first scrape only after Chromium is installed
-    from main import run_once, run_forever
+    from main import run_forever, run_once
     run_once()
     run_forever()
 
@@ -76,7 +77,7 @@ def _log_to_file():
     from config import APP_LOG_PATH
     f = open(APP_LOG_PATH, "a", buffering=1, encoding="utf-8")
     sys.stdout = sys.stderr = f
-    print(f"\n===== Aluguel started {time.strftime('%Y-%m-%d %H:%M:%S')} =====")
+    print(f"\n===== {_cfg.APP_NAME} started {time.strftime('%Y-%m-%d %H:%M:%S')} =====")
 
 
 def main():
@@ -90,7 +91,7 @@ def main():
     time.sleep(1.5)
 
     window = webview.create_window(
-        "Aluguel",
+        _cfg.APP_DISPLAY_NAME,
         "http://127.0.0.1:8080",
         width=1280,
         height=820,

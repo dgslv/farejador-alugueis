@@ -1,10 +1,12 @@
 import asyncio
 import json
-import re
 import random
+import re
+
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
-from config import SEARCH_URLS, MAX_PAGES, HEADLESS, USER_AGENT, EXCLUDED_NEIGHBORHOODS
+
+from config import EXCLUDED_NEIGHBORHOODS, HEADLESS, MAX_PAGES, SEARCH_URLS, USER_AGENT
 
 # URL pattern: /imovel/apartamento-N-quartos-...-Xm2-aluguel-RSPRICE-id-ID/
 _URL_RE = re.compile(
@@ -246,7 +248,7 @@ async def fetch_listings(urls: list = None) -> list:
                     # Follow the "próxima página" link if present
                     next_link = page.locator('a[aria-label="próxima página"]:not([aria-disabled="true"])')
                     if await next_link.count() == 0:
-                        print(f"  [scraper] no next page button, done.")
+                        print("  [scraper] no next page button, done.")
                         break
                     next_href = await next_link.get_attribute("href")
                     if not next_href:

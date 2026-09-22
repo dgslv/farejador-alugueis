@@ -1,12 +1,13 @@
 import sys
 from datetime import datetime
-from config import LOG_PATH
+
+from config import APP_NAME, LOG_PATH
 
 
 def notify(title: str, message: str):
     try:
         from plyer import notification
-        notification.notify(title=title, message=message, app_name="Aluguel", timeout=8)
+        notification.notify(title=title, message=message, app_name=APP_NAME, timeout=8)
     except Exception:
         # Fallback: macOS osascript
         if sys.platform == "darwin":

@@ -2,9 +2,9 @@ import asyncio
 import time
 from datetime import datetime
 
+from notifier import log_listing, notify
 from scraper import fetch_listings
-from storage import init_db, is_new, save_listing, get_tracked_ids, get_sources, get_setting
-from notifier import notify, log_listing
+from storage import get_setting, get_sources, get_tracked_ids, init_db, is_new, save_listing
 
 
 def run_once():

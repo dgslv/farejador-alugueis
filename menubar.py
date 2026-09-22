@@ -1,7 +1,6 @@
 """macOS menu bar status icon for the apartment scraper."""
 
 import re
-import subprocess
 import webbrowser
 from collections import deque
 from pathlib import Path
