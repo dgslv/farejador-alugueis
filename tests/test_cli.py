@@ -1,4 +1,4 @@
-"""__main__.py — a porta de entrada única (`farejador`, `python -m farejador`)."""
+"""__main__.py — the single entry point (`farejador`, `python -m farejador`)."""
 
 import pytest
 

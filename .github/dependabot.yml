@@ -1,4 +1,4 @@
-# Atualizações de dependência uma vez por mês, agrupadas num único PR por ecossistema.
+# Dependency updates once a month, grouped into a single PR per ecosystem.
 version: 2
 updates:
   - package-ecosystem: pip

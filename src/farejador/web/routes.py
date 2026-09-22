@@ -1,4 +1,4 @@
-"""Rotas do painel. HTML fica em templates/, CSS e JS em static/."""
+"""Dashboard routes. HTML lives in templates/, CSS and JS in static/."""
 
 import json
 import re
@@ -22,14 +22,14 @@ from farejador.db import (
 
 bp = Blueprint("dashboard", __name__)
 
-NEW_THRESHOLD_HOURS = 24  # "novo" = encontrado há menos de 24 h e ainda não visto
+NEW_THRESHOLD_HOURS = 24  # "novo" badge = found less than 24 h ago and not checked yet
 
 
-# ── Helpers puros ────────────────────────────────────────────────────────────
+# ── Pure helpers ─────────────────────────────────────────────────────────────
 
 
 def clean_title(raw):
-    """Primeira linha descritiva do texto do card (pula "+16 fotos" e vazios)."""
+    """First descriptive line of the card text (skips "+16 fotos" and blanks)."""
     if not raw:
         return "—"
     for line in raw.split("\n"):
@@ -62,14 +62,14 @@ def _parse_images(images_json) -> list:
         return []
 
 
-# ── Conteúdo da aba Apartamentos ─────────────────────────────────────────────
+# ── Content of the Apartamentos tab ──────────────────────────────────────────
 
 
 def _build_content():
     """Return (rows, fresh_listings, stats) from the current DB state.
 
-    Cada row já vem com os campos derivados (classes, rótulos, preços
-    formatados); os templates só cuidam da marcação.
+    Each row carries its derived fields (CSS classes, labels, formatted
+    prices); the templates only deal with markup.
     """
     listings = get_all_listings()
     total = len(listings)
@@ -151,7 +151,7 @@ def _build_content():
     return rows, fresh, stats
 
 
-# ── Rotas ────────────────────────────────────────────────────────────────────
+# ── Routes ───────────────────────────────────────────────────────────────────
 
 
 @bp.route("/")
@@ -205,7 +205,7 @@ def settings_save():
         try:
             value = int(raw)
         except ValueError:
-            continue  # lixo: mantém o valor guardado
+            continue  # garbage: keep the stored value
         set_setting(key, max(lo, min(hi, value)))
     return redirect(url_for("dashboard.sources"))
 

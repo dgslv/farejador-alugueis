@@ -1,4 +1,4 @@
-/* Farejador de Aluguéis — painel */
+/* Farejador de Aluguéis — dashboard */
 body { font-family: sans-serif; margin: 24px; background: #f5f5f5; }
 h1 { margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }
 h1 .logo { width: 44px; height: 44px; border-radius: 10px; }

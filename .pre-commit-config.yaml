@@ -1,5 +1,5 @@
-# Roda lint e formatação antes de cada commit. Instale uma vez com: pre-commit install
-# É o mesmo ruff que roda no CI (ver .github/workflows/ci.yml).
+# Runs lint and formatting before every commit. Install once with: pre-commit install
+# Same ruff as the CI (see .github/workflows/ci.yml).
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9

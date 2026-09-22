@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Gera o logo e os ícones do app a partir de assets/farejador.svg.
+"""Generate the logo and the app icons from assets/farejador.svg.
 
-Saídas (todas versionadas, para o build não depender deste script):
+Outputs (all committed, so builds never depend on this script):
   assets/logo.png                         512 px — README
-  src/farejador/web/static/logo.png       512 px — painel e favicon (dado do pacote)
+  src/farejador/web/static/logo.png       512 px — dashboard and favicon (package data)
   packaging/icons/farejador.ico           Windows (16–256 px)
-  packaging/icons/farejador.icns          macOS (só roda no macOS: usa o iconutil do sistema)
+  packaging/icons/farejador.icns          macOS (macOS only: uses the system's iconutil)
 
-Requer: pip install -e ".[desktop]"  +  playwright install chromium
-Uso:    python packaging/make-icons.py
+Requires: pip install -e ".[desktop]"  +  playwright install chromium
+Usage:    python packaging/make-icons.py
 """
 
 import shutil
@@ -28,10 +28,10 @@ ICONSET_SIZES = [16, 32, 64, 128, 256, 512]
 
 
 def render_png(size: int) -> Image.Image:
-    """Renderiza o SVG com o Chromium do Playwright (o mesmo que o app já usa).
+    """Render the SVG with Playwright's Chromium (the same one the app uses).
 
-    O SVG vai embutido no HTML: um <img src="file://…"> numa página about:blank
-    é bloqueado pelo Chromium e renderiza em branco.
+    The SVG is inlined in the HTML: an <img src="file://…"> on an about:blank
+    page is blocked by Chromium and renders blank.
     """
     svg = SVG.read_text(encoding="utf-8")
     html = f"<html><body style='margin:0;background:transparent'>{svg}</body></html>"
@@ -61,7 +61,7 @@ def main() -> None:
     print("packaging/icons/farejador.ico")
 
     if sys.platform != "darwin" or not shutil.which("iconutil"):
-        print("packaging/icons/farejador.icns: pulado (precisa do iconutil do macOS)")
+        print("packaging/icons/farejador.icns: skipped (needs macOS iconutil)")
         return
     with tempfile.TemporaryDirectory() as tmp:
         iconset = Path(tmp) / "farejador.iconset"

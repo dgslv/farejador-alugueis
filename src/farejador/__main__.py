@@ -1,8 +1,10 @@
-"""Ponto de entrada único.
+"""The single entry point.
 
-farejador               app desktop (painel em janela nativa + robô de busca)
-farejador --headless    só o robô, no terminal
-farejador --dashboard   só o painel, em http://127.0.0.1:8080 no seu navegador
+  farejador               desktop app (dashboard in a native window + scraper)
+  farejador --headless    scraper only, in the terminal
+  farejador --dashboard   dashboard only, at http://127.0.0.1:8080 in your browser
+
+Help strings are in Portuguese on purpose: they are user-facing, like the app.
 """
 
 import argparse

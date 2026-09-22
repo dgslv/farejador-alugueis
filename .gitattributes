@@ -1,4 +1,4 @@
-# Normaliza quebras de linha entre macOS, Windows e Linux.
+# Normalize line endings across macOS, Windows and Linux.
 * text=auto eol=lf
 *.bat text eol=crlf
 *.png binary

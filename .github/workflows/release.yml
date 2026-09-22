@@ -1,9 +1,9 @@
-# Gera os instaladores e publica a Release quando uma tag vX.Y.Z é enviada.
-# Processo completo em docs/lancamentos.md.
+# Builds the installers and publishes the Release when a vX.Y.Z tag is pushed.
+# Full process in docs/releasing.md.
 #
-# Também roda — só a parte de gerar os instaladores, sem publicar — em PRs
-# que mexem em empacotamento e ao disparar manualmente (Actions → Release →
-# Run workflow). Os instaladores ficam como artefatos do workflow.
+# Also runs — build jobs only, never the publish job — on PRs that touch
+# packaging and on manual dispatch (Actions → Release → Run workflow). The
+# installers are kept as workflow artifacts.
 name: Release
 
 on:
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   check-version:
-    name: tag == version.py
+    name: tag matches __version__
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
@@ -35,7 +35,7 @@ jobs:
       - if: startsWith(github.ref, 'refs/tags/')
         run: |
           if [ "$GITHUB_REF_NAME" != "v${{ steps.v.outputs.version }}" ]; then
-            echo "::error::A tag $GITHUB_REF_NAME não bate com version.py (v${{ steps.v.outputs.version }})."
+            echo "::error::Tag $GITHUB_REF_NAME does not match __version__ (v${{ steps.v.outputs.version }})."
             exit 1
           fi
 
@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: packaging/build-macos.sh
-      - name: Smoke test — o .app sobe o painel sem erro de import
+      - name: Smoke test — the .app starts and serves the dashboard
         run: |
           set -e
           export FAREJADOR_DATA_DIR="$PWD/smoke-data"
@@ -65,10 +65,10 @@ jobs:
             curl -sf http://127.0.0.1:8080/sources > page.html && break
             sleep 2
           done
-          grep -q 'name="interval_seconds"' page.html || { echo "::error::formulário de configurações ausente"; head -50 page.html; exit 1; }
+          grep -q 'name="interval_seconds"' page.html || { echo "::error::settings form missing"; head -50 page.html; exit 1; }
           sleep 5
           echo "--- app.log ---"; cat smoke-data/app.log
-          if grep -qE "Traceback|ModuleNotFoundError" smoke-data/app.log; then echo "::error::erros no app.log"; exit 1; fi
+          if grep -qE "Traceback|ModuleNotFoundError" smoke-data/app.log; then echo "::error::errors in app.log"; exit 1; fi
           kill $APP_PID || true
       - uses: actions/upload-artifact@v4
         with:
@@ -87,7 +87,7 @@ jobs:
           python-version: "3.11"
       - run: packaging\build-windows.bat
         shell: cmd
-      - name: Smoke test — o .exe sobe o painel sem erro de import
+      - name: Smoke test — the .exe starts and serves the dashboard
         shell: pwsh
         run: |
           $env:FAREJADOR_DATA_DIR = "$PWD\smoke-data"
@@ -101,11 +101,11 @@ jobs:
             } catch {}
             Start-Sleep -Seconds 2
           }
-          if (-not $ok) { Write-Error "o painel não subiu"; exit 1 }
-          if ($r.Content -notmatch 'name="interval_seconds"') { Write-Error "formulário de configurações ausente"; exit 1 }
+          if (-not $ok) { Write-Error "dashboard never came up"; exit 1 }
+          if ($r.Content -notmatch 'name="interval_seconds"') { Write-Error "settings form missing"; exit 1 }
           Start-Sleep -Seconds 5
           Write-Host "--- app.log ---"; Get-Content smoke-data\app.log
-          if (Select-String -Path smoke-data\app.log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "erros no app.log"; exit 1 }
+          if (Select-String -Path smoke-data\app.log -Pattern "Traceback|ModuleNotFoundError" -Quiet) { Write-Error "errors in app.log"; exit 1 }
           Stop-Process -Id $p.Id -Force
       - uses: actions/upload-artifact@v4
         with:
@@ -114,7 +114,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: publicar Release
+    name: publish Release
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [check-version, build-macos, build-windows]
     runs-on: ubuntu-latest
@@ -131,7 +131,7 @@ jobs:
           cd artifacts
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
-      - name: Notas a partir do CHANGELOG
+      - name: Release notes from CHANGELOG
         run: python3 scripts/changelog_section.py "${{ needs.check-version.outputs.version }}" > notes.md
       - uses: softprops/action-gh-release@v2
         with:
