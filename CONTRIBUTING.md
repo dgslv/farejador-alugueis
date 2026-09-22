@@ -89,7 +89,7 @@ Branch a partir de `main`, nome `tipo/descricao-curta` (ex. `fix/preco-com-centa
 5. Alguém — talvez o mantenedor, talvez outra pessoa — vai revisar. Responda aos comentários com commits novos (não reescreva o histórico da branch durante a revisão; fica mais fácil acompanhar).
 6. Com CI verde e aprovação do mantenedor, ele faz o merge. A branch é apagada automaticamente.
 
-**Mexeu em empacotamento** (`*.spec`, `requirements-desktop.txt`, `scripts/build-*`, `app.py`)? O CI de PR não gera os instaladores. Rode o build localmente (`scripts/build-macos.sh` ou `scripts\build-windows.bat`) e conte o resultado no PR; o mantenedor pode disparar o workflow *Release* manualmente na sua branch para gerar os artefatos nos três sistemas.
+**Mexeu em empacotamento** (`*.spec`, `requirements*.txt`, `scripts/build-*`, `app.py`, `version.py`)? O workflow *Release* roda automaticamente no seu PR e deixa os instaladores dos três sistemas como artefatos (aba *Actions* → o run do seu PR → *Artifacts*). Baixe o do seu sistema, instale e conte no PR o que aconteceu — isso é o que valida a mudança, não o build ter ficado verde.
 
 ## Revisando o PR de outra pessoa
 

@@ -33,7 +33,10 @@ Só o mantenedor publica ([GOVERNANCE.md](../GOVERNANCE.md)). Um release leva un
 
 ## Testar o empacotamento sem lançar
 
-Actions → **Release** → *Run workflow* → escolha a branch. Roda os mesmos builds e deixa os instaladores como artefatos do workflow por 90 dias, sem criar Release. Use antes de mergear qualquer PR que mexa em `*.spec`, `requirements-desktop.txt`, `scripts/build-*` ou `app.py`.
+Dois jeitos, ambos rodam os mesmos builds e deixam os instaladores como artefatos do workflow por 90 dias, sem criar Release:
+
+- **Automático**: todo PR que mexe em `*.spec`, `requirements*.txt`, `scripts/build-*`, `app.py` ou `version.py` dispara o workflow *Release* sozinho.
+- **Manual**: Actions → **Release** → *Run workflow* → escolha a branch (o GitHub só mostra o botão para workflows que já existem na `main`).
 
 ## Se algo deu errado depois de publicar
 
