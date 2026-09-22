@@ -1,4 +1,4 @@
-# Farejador de Aluguéis
+# <img src="assets/logo.png" width="40" alt=""> Farejador de Aluguéis
 
 > *"Rental sniffer"* — a desktop app that watches your [VivaReal](https://www.vivareal.com.br) (Brazil's main rental listings site) searches and notifies you the moment a new apartment shows up within your total budget (rent + condo fee + property tax).
 

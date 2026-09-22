@@ -57,7 +57,8 @@ Pausas aleatórias de 1,5–3 s entre páginas, user agent de desktop comum e o 
 
 ## Empacotamento
 
-- PyInstaller, um spec por sistema (`farejador-macos.spec` → `Farejador.app` dentro de um `.dmg`; `farejador-windows.spec` → `Farejador.exe` de arquivo único). Ambos leem a versão de `version.py`.
+- PyInstaller, um spec por sistema (`farejador-macos.spec` → `Farejador.app` dentro de um `.dmg`; `farejador-windows.spec` → `Farejador.exe` de arquivo único). Ambos leem a versão de `version.py` e o ícone de `assets/`.
+- **Logo e ícones** vivem em `assets/`: `farejador.svg` é a fonte; `logo.png` (painel, README), `farejador.icns` (macOS) e `farejador.ico` (Windows) são gerados por `scripts/make-icons.py` e versionados, para o build não depender do script. A pasta `assets/` vai inteira para dentro do instalador e o painel a serve em `/assets/`.
 - O **Chromium não vai no instalador** (seriam +150 MB e a pasta do bundle é somente leitura). `app.py` aponta `PLAYWRIGHT_BROWSERS_PATH` para a pasta de dados e instala na primeira execução chamando o driver do Playwright direto (`node cli.js install chromium`) — chamar `sys.executable -m playwright` dentro do bundle relançaria o próprio app.
 - Os instaladores são gerados pelo GitHub Actions ([release.yml](../.github/workflows/release.yml)) a partir dos mesmos scripts que rodam localmente (`scripts/build-*`), e cada build passa por um smoke test: o binário sobe, o painel responde e o `app.log` não tem traceback. Não são assinados com identidade da Apple — daí os avisos do Gatekeeper e do SmartScreen documentados no README.
 - O macOS amarra a permissão de notificações à identidade de assinatura, e a assinatura ad-hoc do PyInstaller muda a cada build. `scripts/build-macos.sh` assina com uma identidade fixa (`SIGN_IDENTITY`, padrão `Farejador Dev`, autoassinada serve) quando ela existe na máquina; no CI não existe, então o build fica ad-hoc.

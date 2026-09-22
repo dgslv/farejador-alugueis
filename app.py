@@ -40,6 +40,7 @@ def _install_chromium(window: webview.Window):
     window.load_html("""
     <html><body style="font-family:sans-serif;display:flex;align-items:center;
     justify-content:center;height:100vh;margin:0;background:#f5f5f5;flex-direction:column;gap:12px">
+    <img src="http://127.0.0.1:8080/assets/logo.png" width="96" height="96" style="border-radius:22px" alt="">
     <h2 style="color:#333;margin:0">Configurando o Farejador…</h2>
     <p style="color:#666;margin:0">Instalando navegador (~300 MB, apenas na primeira vez).</p>
     <p style="color:#999;font-size:13px;margin:0">Aguarde, pode levar alguns minutos.</p>

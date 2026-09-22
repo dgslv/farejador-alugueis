@@ -16,6 +16,7 @@ on:
       - "version.py"
       - "requirements*.txt"
       - "scripts/build-*"
+      - "assets/**"
       - ".github/workflows/release.yml"
   workflow_dispatch:
 
