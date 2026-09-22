@@ -28,8 +28,19 @@ Só o mantenedor publica ([GOVERNANCE.md](../GOVERNANCE.md)). Um release leva un
    - confere que a tag bate com `__version__` (se não bater, para aqui — apague a tag, corrija e repita);
    - gera `Farejador-X.Y.Z-macOS-arm64.dmg`, `Farejador-X.Y.Z-macOS-x86_64.dmg` e `Farejador-X.Y.Z-Windows-x64.exe`;
    - publica a Release com esses três arquivos, `SHA256SUMS.txt`, a seção do CHANGELOG e a lista de PRs agrupada por label ([`.github/release.yml`](../.github/release.yml)).
-5. **Canário — a release só está pronta depois disto:** baixe pelo menos um instalador da página da Release (não o artefato do CI), instale numa máquina limpa ou numa conta nova, cadastre uma fonte e espere a primeira busca terminar com anúncios na tela. Se falhar, marque a Release como *pre-release*, abra uma issue e corrija num patch.
+5. **Canário — a release só está pronta depois disto:** baixe pelo menos um instalador da página da Release (não o artefato do CI), instale numa máquina limpa ou numa conta nova, cadastre uma fonte e espere a primeira busca terminar com anúncios na tela. Antes disso, `scripts/validate-local.sh` (seção abaixo) deve ter passado na sua máquina. Se falhar, marque a Release como *pre-release*, abra uma issue e corrija num patch.
 6. Avise onde fizer sentido (issue de acompanhamento, redes) com o link da Release.
+
+## Validação local (antes de confiar num release)
+
+`scripts/validate-local.sh` faz, na sua máquina, o mesmo que o CI e o canário juntos: venv nova → `pip install -e ".[dev,desktop]"` → lint, formatação e testes → `packaging/build-macos.sh` → abre o `.app` gerado com uma pasta de dados temporária → cadastra uma busca real → espera a primeira coleta terminar com anúncios. Leva ~10 min, abre a janela do app, não toca a sua pasta de dados.
+
+```bash
+scripts/validate-local.sh                      # busca padrão (Botafogo)
+scripts/validate-local.sh "https://www.vivareal.com.br/aluguel/..."   # a sua busca
+```
+
+Termina com `ALL GOOD` e o caminho do `.dmg`. Qualquer outra saída é um problema real para investigar antes de lançar. No Windows, o equivalente manual é `pytest` + `packaging\build-windows.bat` + abrir o `.exe`.
 
 ## Testar o empacotamento sem lançar
 
