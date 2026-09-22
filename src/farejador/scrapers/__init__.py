@@ -1,1 +1,1 @@
-"""Um módulo por portal. Hoje: vivareal. Cada um expõe `fetch_listings(urls) -> list[dict]`."""
+"""One module per listings portal. Today: vivareal. Each exposes `fetch_listings(urls) -> list[dict]`."""

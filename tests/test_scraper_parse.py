@@ -1,6 +1,6 @@
-"""Parser dos cards do VivaReal — as funções puras de scrapers/vivareal.py.
+"""VivaReal card parser — the pure functions of scrapers/vivareal.py.
 
-Nada aqui abre navegador: só texto e URL entram, dicionário sai.
+Nothing here opens a browser: text and URL in, dict out.
 """
 
 import pytest
@@ -8,7 +8,7 @@ import pytest
 from farejador.scrapers.vivareal import _extract_card_fields, _parse_brl, _parse_link, _price_from_text
 from tests.data import BOTAFOGO_2Q, HUMAITA_SEM_RUA
 
-# ── _parse_link: URL + texto do card → anúncio ───────────────────────────────
+# ── _parse_link: URL + card text → listing ───────────────────────────────
 
 
 def test_parse_link_real_card():
@@ -33,7 +33,7 @@ def test_parse_link_strips_query_string_from_url():
 
 def test_parse_link_price_falls_back_to_url_when_card_text_has_none():
     text = BOTAFOGO_2Q["text"].replace("R$ 4.500/mês", "")
-    assert _parse_link(BOTAFOGO_2Q["href"], text)["price"] == 4500  # "-RS4500-" na URL
+    assert _parse_link(BOTAFOGO_2Q["href"], text)["price"] == 4500  # "-RS4500-" in the URL
 
 
 def test_parse_link_without_price_anywhere_is_zero():
@@ -50,8 +50,8 @@ def test_parse_link_missing_rooms_and_area_default_to_zero():
 @pytest.mark.parametrize(
     "href",
     [
-        "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/",  # página de busca, não anúncio
-        "https://www.vivareal.com.br/imovel/apartamento-2-quartos/",  # sem "-id-NNN"
+        "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/",  # search page, not a listing
+        "https://www.vivareal.com.br/imovel/apartamento-2-quartos/",  # no "-id-NNN"
         "",
     ],
 )
@@ -59,7 +59,7 @@ def test_parse_link_rejects_non_listing_urls(href):
     assert _parse_link(href, "qualquer texto") is None
 
 
-# ── _parse_brl / _price_from_text: dinheiro em texto → int ───────────────────
+# ── _parse_brl / _price_from_text: money in text → int ───────────────────
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_parse_link_rejects_non_listing_urls(href):
         ("1.566", 1566),
         ("340", 340),
         ("12.345.678", 12345678),
-        ("4,500", 4500),  # separador de milhar com vírgula
+        ("4,500", 4500),  # thousands separator with a comma
         ("", 0),
         ("abc", 0),
         ("R$", 0),
@@ -84,10 +84,10 @@ def test_parse_brl(raw, expected):
     [
         ("R$ 4.500/mês", 4500),
         ("R$4500/mês", 4500),
-        ("R$ 4.500 / mes", 4500),  # sem acento
-        ("R$ 4.500 /MÊS", 4500),  # caixa alta
-        ("Venda R$ 900.000\nR$ 4.500/mês", 4500),  # anúncio de venda + aluguel: pega o aluguel
-        ("R$ 900.000", 0),  # só preço de venda (sem "/mês") não conta
+        ("R$ 4.500 / mes", 4500),  # no accent
+        ("R$ 4.500 /MÊS", 4500),  # upper case
+        ("Venda R$ 900.000\nR$ 4.500/mês", 4500),  # sale + rent listing: takes the rent
+        ("R$ 900.000", 0),  # a sale price alone (no "/mês") does not count
         ("", 0),
     ],
 )
@@ -95,7 +95,7 @@ def test_price_from_text(text, expected):
     assert _price_from_text(text) == expected
 
 
-# ── _extract_card_fields: bairro, rua, condomínio, IPTU ──────────────────────
+# ── _extract_card_fields: neighborhood, street, condo fee, IPTU ──────────────────────
 
 
 def test_extract_card_fields_real_card():
@@ -123,7 +123,7 @@ def test_extract_card_fields_empty_text():
 
 @pytest.mark.xfail(
     strict=True,
-    reason="bug conhecido (#2): card sem rua devolve o rótulo 'Tamanho do imóvel' como rua",
+    reason="known bug (#2): a card without a street line yields the label 'Tamanho do imóvel' as the street",
 )
 def test_extract_card_fields_card_without_street_line():
     assert _extract_card_fields(HUMAITA_SEM_RUA["text"])["street"] == ""

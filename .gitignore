@@ -8,17 +8,17 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
-# Dados e logs locais (o app grava na pasta de dados do usuário; estes são de execuções a partir do código)
+# Local data and logs (the app writes to the user's data dir; these come from runs off the source tree)
 *.db
 *.log
 backend/listings.db
 
-# Build / empacotamento
+# Build / packaging
 dist/
 build/
 *.spec.bak
 
-# Sistema / editor / estado local
+# OS / editor / local state
 .DS_Store
 .idea/
 .vscode/

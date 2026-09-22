@@ -69,7 +69,7 @@ O Farejador usa um navegador próprio (Chromium) para ler o site. Na primeira ve
 
 Lá dentro: `listings.db` (anúncios, fontes e configurações), `alerts.log` (histórico dos avisos), `app.log` (diagnóstico — anexe nos relatos de problema) e `ms-playwright/` (o navegador). Para começar do zero, feche o app e apague a pasta. A variável de ambiente `FAREJADOR_DATA_DIR` muda a pasta (útil para instalações portáteis).
 
-Algo deu errado? Veja [Solução de problemas](docs/solucao-de-problemas.md).
+Algo deu errado? Veja [Solução de problemas](docs/troubleshooting.md).
 
 ## Rodar a partir do código-fonte
 
@@ -105,7 +105,7 @@ Porta ocupada? `FAREJADOR_PORT=8090 farejador`. Outra pasta de dados? `FAREJADOR
         └──────▶ notify.py → notificação do sistema + alerts.log
 ```
 
-Detalhes de cada peça, esquema do banco e decisões de projeto: [docs/como-funciona.md](docs/como-funciona.md).
+Detalhes de cada peça, esquema do banco e decisões de projeto: [docs/how-it-works.md](docs/how-it-works.md).
 
 ## Contribuindo
 

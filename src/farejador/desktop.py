@@ -1,4 +1,4 @@
-"""App desktop: painel Flask e robô de busca em threads, janela nativa (pywebview)."""
+"""Desktop app: Flask dashboard and scraper in threads, native window (pywebview)."""
 
 import logging
 import os

@@ -1,4 +1,4 @@
-"""db.py — persistência em SQLite (anúncios, fontes e configurações)."""
+"""db.py — SQLite persistence (listings, sources and settings)."""
 
 import sqlite3
 from datetime import datetime
@@ -10,7 +10,7 @@ from tests.data import LISTING, SEARCH_URL
 
 
 class FrozenClock:
-    """Substitui db.datetime para controlar seen_at / last_seen_at."""
+    """Replaces db.datetime to control seen_at / last_seen_at."""
 
     def __init__(self, iso):
         self._now = datetime.fromisoformat(iso)
@@ -19,11 +19,11 @@ class FrozenClock:
         return self._now
 
 
-# ── Anúncios ─────────────────────────────────────────────────────────────────
+# ── Listings ─────────────────────────────────────────────────────────────────
 
 
 def test_init_db_is_idempotent(db):
-    db_module.init_db()  # as migrações "ALTER TABLE" já aplicadas não podem quebrar
+    db_module.init_db()  # already-applied "ALTER TABLE" migrations must not break
     assert db_module.get_all_listings() == []
 
 
@@ -44,7 +44,7 @@ def test_saving_again_only_touches_last_seen_at(db, monkeypatch):
     monkeypatch.setattr(db_module, "datetime", FrozenClock("2026-09-01T10:00:00"))
     db_module.save_listing(LISTING)
     monkeypatch.setattr(db_module, "datetime", FrozenClock("2026-09-02T10:00:00"))
-    db_module.save_listing({**LISTING, "price": 9999})  # preço novo é ignorado de propósito
+    db_module.save_listing({**LISTING, "price": 9999})  # the new price is ignored on purpose
     row = db_module.get_all_listings()[0]
     assert row["seen_at"] == "2026-09-01T10:00:00"
     assert row["last_seen_at"] == "2026-09-02T10:00:00"
@@ -64,7 +64,7 @@ def test_mark_checked_moves_listing_to_the_end(db):
     db_module.save_listing({**LISTING, "id": "2", "url": "https://www.vivareal.com.br/imovel/x-id-2/"})
     db_module.mark_checked(LISTING["id"])
     rows = db_module.get_all_listings()
-    assert [r["id"] for r in rows] == ["2", LISTING["id"]]  # não vistos primeiro
+    assert [r["id"] for r in rows] == ["2", LISTING["id"]]  # unchecked first
     assert rows[1]["checked"] == 1
     assert rows[1]["checked_at"]
 
@@ -72,7 +72,7 @@ def test_mark_checked_moves_listing_to_the_end(db):
 def test_count_listings_counts_distinct_ids(db):
     assert db_module.count_listings() == 0
     db_module.save_listing(LISTING)
-    db_module.save_listing(LISTING)  # mesma chave: continua 1
+    db_module.save_listing(LISTING)  # same key: still 1
     assert db_module.count_listings() == 1
 
 
@@ -84,12 +84,12 @@ def test_toggle_tracked_round_trip(db):
     assert db_module.get_tracked_ids() == set()
 
 
-# ── Fontes (URLs de busca) ───────────────────────────────────────────────────
+# ── Sources (search URLs) ────────────────────────────────────────────────────
 
 
 def test_add_source_ignores_duplicate_url(db):
     db_module.add_source(SEARCH_URL, "Botafogo 2q")
-    db_module.add_source("  " + SEARCH_URL + "  ", "outro nome")  # mesma URL, com espaços
+    db_module.add_source("  " + SEARCH_URL + "  ", "outro nome")  # same URL, with whitespace
     sources = db_module.get_sources()
     assert len(sources) == 1
     assert (sources[0]["label"], sources[0]["active"]) == ("Botafogo 2q", 1)
@@ -115,7 +115,7 @@ def test_delete_unknown_source_is_a_noop(db):
     assert db_module.get_sources() == []
 
 
-# ── Configurações ────────────────────────────────────────────────────────────
+# ── Settings ─────────────────────────────────────────────────────────────────
 
 
 def test_settings_defaults_come_from_config(db):

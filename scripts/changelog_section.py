@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Imprime a seção de uma versão do CHANGELOG.md (o workflow Release usa como notas).
+"""Print one version's section of CHANGELOG.md (the Release workflow uses it as release notes).
 
-Uso: python scripts/changelog_section.py 2.0.0   (ou v2.0.0)
+Usage: python scripts/changelog_section.py 2.0.0   (or v2.0.0)
 """
 
 import re
@@ -21,7 +21,7 @@ def section(changelog: str, version: str) -> str:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        sys.exit("uso: changelog_section.py <versão>")
+        sys.exit("usage: changelog_section.py <version>")
     text = (Path(__file__).resolve().parent.parent / "CHANGELOG.md").read_text(encoding="utf-8")
     body = section(text, sys.argv[1])
     print(body or f"Veja o CHANGELOG.md para a versão {sys.argv[1]}.")

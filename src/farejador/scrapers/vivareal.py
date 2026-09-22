@@ -1,4 +1,4 @@
-"""Scraper do VivaReal: abre cada busca num Chromium headless e converte os cards em anúncios."""
+"""VivaReal scraper: opens each search in a headless Chromium and turns the cards into listings."""
 
 import asyncio
 import json

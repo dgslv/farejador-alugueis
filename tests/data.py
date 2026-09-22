@@ -1,14 +1,14 @@
-"""Dados reais usados pelos testes.
+"""Real data used by the tests.
 
-Os cards abaixo são o `inner_text` de anúncios reais do VivaReal, copiados
-do banco de uma instalação em uso — não exemplos inventados. É exatamente
-assim que o parser encontra o texto em produção. Ao capturar um card novo,
-cole o texto sem retocar (as quebras de linha fazem parte do formato).
+The cards below are the `inner_text` of real VivaReal listings, copied from
+the database of an installation in use — not invented examples. This is
+exactly how the parser meets the text in production. When capturing a new
+card, paste the text untouched (the line breaks are part of the format).
 """
 
 SEARCH_URL = "https://www.vivareal.com.br/aluguel/rj/rio-de-janeiro/zona-sul/botafogo/apartamento_residencial/"
 
-# Card completo: rua, condomínio e IPTU presentes.
+# Complete card: street, condo fee and IPTU present.
 BOTAFOGO_2Q = {
     "href": (
         "https://www.vivareal.com.br/imovel/"
@@ -38,7 +38,7 @@ BOTAFOGO_2Q = {
     ),
 }
 
-# Card SEM a linha da rua (o anunciante não informou o endereço).
+# Card WITHOUT the street line (the advertiser gave no address).
 HUMAITA_SEM_RUA = {
     "href": (
         "https://www.vivareal.com.br/imovel/"
@@ -63,7 +63,7 @@ HUMAITA_SEM_RUA = {
     ),
 }
 
-# Anúncio já parseado, no formato que storage.save_listing recebe.
+# Already-parsed listing, in the shape db.save_listing receives.
 LISTING = {
     "id": "2873504200",
     "url": BOTAFOGO_2Q["href"],

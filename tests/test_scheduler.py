@@ -1,4 +1,4 @@
-"""scheduler.py — uma rodada do agendador, com o scraper substituído por uma função falsa."""
+"""scheduler.py — one scheduler round, with the scraper replaced by a fake."""
 
 import pytest
 
@@ -22,7 +22,7 @@ LISTING_2 = {
 
 @pytest.fixture
 def env(db, monkeypatch):
-    """Banco criado, uma fonte cadastrada, notificações capturadas, scraper falso."""
+    """Database created, one source registered, notifications captured, fake scraper."""
     dbm.add_source(SEARCH_URL, "Botafogo")
     notified = []
     monkeypatch.setattr(scheduler, "notify", lambda title, message: notified.append((title, message)))
@@ -41,19 +41,19 @@ def env(db, monkeypatch):
 def test_first_run_saves_silently_then_notifies_only_new_listings(env):
     env["returns"]([LISTING])
     scheduler.run_once()
-    assert env["notified"] == []  # banco vazio = primeira rodada: sem avisos
+    assert env["notified"] == []  # empty database = first run: no notifications
     assert not dbm.is_new(LISTING["id"])
 
     env["returns"]([LISTING, LISTING_2])
     scheduler.run_once()
-    assert len(env["notified"]) == 1  # só o anúncio novo
+    assert len(env["notified"]) == 1  # only the new listing
     title, message = env["notified"][0]
     assert "Novo" in title
     assert "5,500" in message
 
 
 def test_run_once_ignores_listings_over_the_budget(env):
-    dbm.set_setting("max_total_price", 6000)  # LISTING custa 4500 + 1566 + 340 = 6406
+    dbm.set_setting("max_total_price", 6000)  # LISTING costs 4500 + 1566 + 340 = 6406
     env["returns"]([LISTING])
     scheduler.run_once()
     assert dbm.is_new(LISTING["id"])
@@ -65,7 +65,7 @@ def test_run_once_survives_a_failing_scrape(env, monkeypatch):
         raise RuntimeError("site fora do ar")
 
     monkeypatch.setattr(scheduler, "fetch_listings", boom)
-    scheduler.run_once()  # não pode levantar exceção: o agendador continua na próxima rodada
+    scheduler.run_once()  # must not raise: the scheduler carries on with the next round
     assert dbm.count_listings() == 0
     assert env["notified"] == []
 

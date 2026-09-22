@@ -1,7 +1,7 @@
-"""Fixtures compartilhadas.
+"""Shared fixtures.
 
-Todo teste roda numa pasta de dados temporária (FAREJADOR_DATA_DIR), então a
-suíte nunca toca o banco, os logs ou o Chromium de uma instalação real.
+Every test runs in a temporary data dir (FAREJADOR_DATA_DIR), so the suite
+never touches the database, logs or Chromium of a real installation.
 """
 
 import pytest
@@ -11,7 +11,7 @@ from farejador import db as db_module
 
 @pytest.fixture(autouse=True)
 def data_dir(tmp_path, monkeypatch):
-    """Pasta de dados isolada para TODO teste (banco, alerts.log, app.log)."""
+    """Isolated data dir for EVERY test (database, alerts.log, app.log)."""
     d = tmp_path / "data"
     monkeypatch.setenv("FAREJADOR_DATA_DIR", str(d))
     return d
@@ -19,6 +19,6 @@ def data_dir(tmp_path, monkeypatch):
 
 @pytest.fixture
 def db(data_dir):
-    """Banco vazio com as tabelas criadas. Devolve o caminho do arquivo."""
+    """Empty database with the tables created. Returns the file path."""
     db_module.init_db()
     return data_dir / "listings.db"
